@@ -158,7 +158,22 @@ public class WalletBalanceService {
             divergence = round4(clobBalance - expectedBalance);
         }
 
-        // 5. Save snapshot
+        // 5. Se divergencia detectada, recalcular PnL completo (pode ser atraso de eventos)
+        boolean pnlRecalculated = false;
+        if (!isBaseline && Math.abs(divergence) >= 0.001) {
+            log.info("[WALLET] Divergencia detectada ({}), recalculando PnL do sistema do zero", divergence);
+            double fullPnl = calculateSystemPnlFull();
+            if (Math.abs(fullPnl - systemPnl) >= 0.0001) {
+                log.info("[WALLET] PnL recalculado diferiu: incremental={} -> full={}", systemPnl, fullPnl);
+                systemPnl = fullPnl;
+                systemPnlDelta = round4(systemPnl - baselineOpt.get().getSystemPnl());
+                expectedBalance = round4(baselineOpt.get().getClobBalance() + systemPnlDelta);
+                divergence = round4(clobBalance - expectedBalance);
+                pnlRecalculated = true;
+            }
+        }
+
+        // 6. Save snapshot
         WalletSnapshot snapshot = WalletSnapshot.builder()
                 .timestamp(now)
                 .usdcE(usdcE)
@@ -175,12 +190,14 @@ public class WalletBalanceService {
                 .build();
 
         snapshotRepository.save(snapshot);
-        log.info("[WALLET] Snapshot salvo: baseline={}, clob={}, systemPnl={}, divergence={}",
-                isBaseline, clobBalance, systemPnl, divergence);
+        log.info("[WALLET] Snapshot salvo: baseline={}, clob={}, systemPnl={}, divergence={}{}",
+                isBaseline, clobBalance, systemPnl, divergence,
+                pnlRecalculated ? " (PnL recalculado)" : "");
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", true);
         result.put("snapshot", formatSnapshot(snapshot));
+        if (pnlRecalculated) result.put("pnlRecalculated", true);
         return result;
     }
 
