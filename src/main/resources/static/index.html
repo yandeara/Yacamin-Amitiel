@@ -4266,7 +4266,8 @@
                 const data = await res.json();
                 const enabled = data.enabled;
                 const dot = enabled ? '<span style="color:var(--green);">&#9679;</span>' : '<span style="color:var(--red);">&#9679;</span>';
-                const label = enabled ? 'Auto ON' : 'Auto OFF';
+                const intv = data.intervalMinutes || 5;
+                const label = enabled ? `Auto ON (${intv}min)` : 'Auto OFF';
                 let parts = [dot + ' ' + label];
                 if (data.lastAutoSnapshotFormatted) parts.push('Ultimo: ' + data.lastAutoSnapshotFormatted);
                 if (data.nextWindow && enabled) parts.push('Proximo: ' + data.nextWindow);
@@ -4296,11 +4297,10 @@
         function renderConfigPage(cfg, status) {
             const container = document.getElementById('config-container');
             const enabled = cfg.autoSnapshotEnabled;
-            const windows = cfg.autoSnapshotWindows || [];
+            const interval = cfg.autoSnapshotIntervalMinutes || 5;
 
             let html = '';
 
-            // Status
             html += `<div style="font-size:14px;font-weight:700;margin-bottom:16px;color:var(--accent);">Auto-Snapshot</div>`;
 
             if (status.lastAutoSnapshotFormatted || status.nextWindow) {
@@ -4310,8 +4310,9 @@
                 html += `</div>`;
             }
 
-            // Toggle
             html += `<div class="eh-market-card" style="padding:20px;">`;
+
+            // Toggle
             html += `<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
                 <span style="font-size:13px;font-weight:600;">Atualizacao automatica de saldo</span>
                 <div class="mode-toggle" id="cfg-auto-toggle">
@@ -4320,40 +4321,47 @@
                 </div>
             </div>`;
 
-            // Windows
-            html += `<div style="margin-bottom:16px;">
-                <div style="font-size:12px;font-weight:600;margin-bottom:8px;">Janelas de atualizacao (HH:mm)</div>
-                <div id="cfg-windows" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">`;
+            // Interval
+            html += `<div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+                <span style="font-size:13px;font-weight:600;">Intervalo entre snapshots</span>
+                <div class="mode-toggle" id="cfg-interval-selector">
+                    <button class="mode-btn ${interval===1?'active':''}" onclick="setSnapshotInterval(1)">1 min</button>
+                    <button class="mode-btn ${interval===5?'active':''}" onclick="setSnapshotInterval(5)">5 min</button>
+                    <button class="mode-btn ${interval===10?'active':''}" onclick="setSnapshotInterval(10)">10 min</button>
+                    <button class="mode-btn ${interval===15?'active':''}" onclick="setSnapshotInterval(15)">15 min</button>
+                    <button class="mode-btn ${interval===30?'active':''}" onclick="setSnapshotInterval(30)">30 min</button>
+                    <button class="mode-btn ${interval===60?'active':''}" onclick="setSnapshotInterval(60)">1 hora</button>
+                </div>
+            </div>`;
 
-            windows.forEach((w, i) => {
-                html += `<div style="display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;">
-                    <input type="time" value="${w}" class="cfg-window-input heatmap-input" style="width:80px;font-size:12px;" onchange="updateWindow(${i}, this.value)">
-                    <button onclick="removeWindow(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 4px;">&times;</button>
-                </div>`;
-            });
+            // Custom interval
+            const isCustom = ![1,5,10,15,30,60].includes(interval);
+            html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                <span style="font-size:11px;color:var(--text-dim);">Valor customizado:</span>
+                <input type="number" id="cfg-interval-custom" value="${interval}" min="1" max="1440" class="heatmap-input" style="width:70px;font-size:12px;">
+                <span style="font-size:11px;color:var(--text-dim);">minutos</span>
+                <button class="heatmap-btn heatmap-btn-reset" style="font-size:11px;" onclick="setSnapshotInterval(parseInt(document.getElementById('cfg-interval-custom').value))">Aplicar</button>
+            </div>`;
 
-            html += `</div>
-                <button onclick="addWindow()" class="heatmap-btn heatmap-btn-reset" style="font-size:11px;">+ Adicionar Janela</button>
+            html += `<div style="font-size:11px;color:var(--text-dim);line-height:1.5;">
+                Dispara nos minutos alinhados ao intervalo. Ex: 5 min → :00, :05, :10, :15...<br>
+                10 min → :00, :10, :20, :30...
             </div>`;
 
             html += `<div style="margin-top:16px;">
                 <span id="cfg-status" style="font-size:11px;color:var(--text-dim);"></span>
             </div>`;
 
-            html += `</div>`; // card close
+            html += `</div>`;
 
-            // Explanation
             html += `<div style="margin-top:16px;font-size:11px;color:var(--text-dim);line-height:1.7;">
-                <div>O scheduler roda a cada 5 minutos e verifica se o horario atual esta dentro de uma janela configurada (tolerancia de +-2 min).</div>
-                <div>O snapshot automatico consulta saldos on-chain e CLOB, e calcula o PnL do sistema incrementalmente (sem recalculo completo).</div>
+                <div>O scheduler verifica a cada minuto se o minuto atual esta alinhado ao intervalo configurado.</div>
+                <div>O snapshot consulta saldos on-chain e CLOB, e calcula o PnL do sistema incrementalmente.</div>
                 <div>Configuracoes sao salvas no MongoDB (collection <strong>trading_config</strong>, id=amitiel) e restauradas no startup.</div>
             </div>`;
 
             container.innerHTML = html;
         }
-
-        // Config state (in-memory for editing)
-        let cfgWindows = [];
 
         async function toggleAutoSnapshot(enabled) {
             document.querySelectorAll('#cfg-auto-toggle .mode-btn').forEach(btn => {
@@ -4362,26 +4370,14 @@
             await saveConfigField({ autoSnapshotEnabled: enabled });
         }
 
-        function updateWindow(index, value) {
-            // Read all current inputs
-            const inputs = document.querySelectorAll('.cfg-window-input');
-            const windows = Array.from(inputs).map(inp => inp.value).filter(v => v);
-            if (value) windows[index] = value;
-            saveConfigField({ autoSnapshotWindows: windows });
-        }
-
-        function removeWindow(index) {
-            const inputs = document.querySelectorAll('.cfg-window-input');
-            const windows = Array.from(inputs).map(inp => inp.value).filter(v => v);
-            windows.splice(index, 1);
-            saveConfigField({ autoSnapshotWindows: windows }).then(() => fetchConfig());
-        }
-
-        function addWindow() {
-            const inputs = document.querySelectorAll('.cfg-window-input');
-            const windows = Array.from(inputs).map(inp => inp.value).filter(v => v);
-            windows.push('12:00');
-            saveConfigField({ autoSnapshotWindows: windows }).then(() => fetchConfig());
+        async function setSnapshotInterval(minutes) {
+            if (minutes < 1 || minutes > 1440) return;
+            document.querySelectorAll('#cfg-interval-selector .mode-btn').forEach(btn => {
+                const vals = {'1 min':1,'5 min':5,'10 min':10,'15 min':15,'30 min':30,'1 hora':60};
+                btn.classList.toggle('active', vals[btn.textContent.trim()] === minutes);
+            });
+            document.getElementById('cfg-interval-custom').value = minutes;
+            await saveConfigField({ autoSnapshotIntervalMinutes: minutes });
         }
 
         async function saveConfigField(body) {

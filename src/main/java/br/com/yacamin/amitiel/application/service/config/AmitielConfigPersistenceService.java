@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -27,7 +26,6 @@ public class AmitielConfigPersistenceService {
 
     @PostConstruct
     public void loadOnStartup() {
-        // Salvar valor do profile antes do load do MongoDB
         boolean profileValue = profileAutoSnapshotEnabled;
 
         try {
@@ -42,7 +40,6 @@ public class AmitielConfigPersistenceService {
             log.error("[CONFIG] Erro ao carregar configuracoes do MongoDB, usando defaults: {}", e.getMessage());
         }
 
-        // Profile override: se o profile forcou false, prevalece sobre o MongoDB
         if (!profileValue) {
             configService.setAutoSnapshotEnabled(false);
             log.info("[CONFIG] Auto-snapshot desligado pelo profile (app.auto-snapshot.enabled=false)");
@@ -54,7 +51,7 @@ public class AmitielConfigPersistenceService {
                 .id(CONFIG_ID)
                 .module(MODULE_NAME)
                 .autoSnapshotEnabled(configService.isAutoSnapshotEnabled())
-                .autoSnapshotWindows(configService.getAutoSnapshotWindows())
+                .autoSnapshotIntervalMinutes(configService.getAutoSnapshotIntervalMinutes())
                 .build();
         repository.save(doc);
         log.info("[CONFIG] Configuracoes salvas no MongoDB: {}", configService.getConfigMap());
@@ -62,9 +59,8 @@ public class AmitielConfigPersistenceService {
 
     private void applyFromDoc(AmitielConfigDoc doc) {
         configService.setAutoSnapshotEnabled(doc.isAutoSnapshotEnabled());
-        List<String> windows = doc.getAutoSnapshotWindows();
-        if (windows != null && !windows.isEmpty()) {
-            configService.setAutoSnapshotWindows(windows);
+        if (doc.getAutoSnapshotIntervalMinutes() > 0) {
+            configService.setAutoSnapshotIntervalMinutes(doc.getAutoSnapshotIntervalMinutes());
         }
     }
 }

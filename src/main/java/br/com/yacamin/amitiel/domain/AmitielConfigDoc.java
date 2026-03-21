@@ -7,8 +7,6 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.List;
-
 @Data
 @Builder
 @NoArgsConstructor
@@ -21,5 +19,5 @@ public class AmitielConfigDoc {
     private String module;
 
     private boolean autoSnapshotEnabled;
-    private List<String> autoSnapshotWindows;
+    private int autoSnapshotIntervalMinutes;
 }

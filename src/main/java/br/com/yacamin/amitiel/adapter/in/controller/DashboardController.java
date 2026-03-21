@@ -251,22 +251,15 @@ public class DashboardController {
         return configService.getConfigMap();
     }
 
-    @SuppressWarnings("unchecked")
     @PostMapping("/config")
     public Map<String, Object> updateConfig(@RequestBody Map<String, Object> body) {
         if (body.containsKey("autoSnapshotEnabled")) {
             configService.setAutoSnapshotEnabled(Boolean.TRUE.equals(body.get("autoSnapshotEnabled")));
         }
-        if (body.containsKey("autoSnapshotWindows")) {
-            Object raw = body.get("autoSnapshotWindows");
-            if (raw instanceof List<?> list) {
-                List<String> windows = list.stream()
-                        .map(Object::toString)
-                        .filter(s -> s.matches("\\d{2}:\\d{2}"))
-                        .toList();
-                if (!windows.isEmpty()) {
-                    configService.setAutoSnapshotWindows(windows);
-                }
+        if (body.containsKey("autoSnapshotIntervalMinutes")) {
+            int val = ((Number) body.get("autoSnapshotIntervalMinutes")).intValue();
+            if (val >= 1 && val <= 1440) {
+                configService.setAutoSnapshotIntervalMinutes(val);
             }
         }
         try {
