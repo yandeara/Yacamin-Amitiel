@@ -416,6 +416,60 @@ public class WalletBalanceService {
         return item;
     }
 
+    // ─── Export PnL chain ──────────────────────────────────────
+
+    /**
+     * Exporta todos os eventos relevantes para investigar divergencia de saldo.
+     * Inclui: PNL, FEES, RECONCILED, DUST, REDEEM_CONFIRMED + ultimo snapshot + baseline.
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> exportPnlChain() {
+        var query = org.springframework.data.mongodb.core.query.Query.query(
+                Criteria.where("type").in("PNL", "FEES", "RECONCILED", "DUST",
+                        "REDEEM_CONFIRMED", "AWAITING_REDEEM",
+                        "DUST_REDEEM_CONFIRMED", "DUST_REDEEM_FAILED")
+        ).with(org.springframework.data.domain.Sort.by(
+                org.springframework.data.domain.Sort.Direction.ASC, "timestamp"));
+
+        List<Map> rawEvents = mongoTemplate.find(query, Map.class, "events");
+
+        // Agrupar por slug
+        Map<String, List<Map>> bySlug = new LinkedHashMap<>();
+        double totalPnl = 0;
+        for (Map ev : rawEvents) {
+            String slug = (String) ev.get("slug");
+            bySlug.computeIfAbsent(slug, k -> new ArrayList<>()).add(ev);
+            if ("PNL".equals(ev.get("type"))) {
+                Object payload = ev.get("payload");
+                if (payload instanceof Map p) {
+                    Object pnlVal = p.get("pnlReal");
+                    if (pnlVal instanceof Number n) totalPnl += n.doubleValue();
+                }
+            }
+        }
+
+        // Snapshots
+        Optional<WalletSnapshot> latestOpt = snapshotRepository.findFirstByOrderByTimestampDesc();
+        Optional<WalletSnapshot> baselineOpt = snapshotRepository.findFirstByBaselineTrueOrderByTimestampDesc();
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("exportTimestamp", System.currentTimeMillis());
+        result.put("totalPnlEvents", rawEvents.stream().filter(e -> "PNL".equals(e.get("type"))).count());
+        result.put("totalPnlSum", round4(totalPnl));
+        result.put("totalMarkets", bySlug.size());
+
+        if (latestOpt.isPresent()) {
+            result.put("latestSnapshot", formatSnapshot(latestOpt.get()));
+        }
+        if (baselineOpt.isPresent()) {
+            result.put("baselineSnapshot", formatSnapshot(baselineOpt.get()));
+        }
+
+        result.put("markets", bySlug);
+
+        return result;
+    }
+
     private double round4(double v) {
         return Math.round(v * 10000.0) / 10000.0;
     }

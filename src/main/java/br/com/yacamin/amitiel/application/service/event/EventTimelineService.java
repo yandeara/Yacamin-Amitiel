@@ -978,11 +978,63 @@ public class EventTimelineService {
         return Math.max(fee, 0.0001);
     }
 
+
     private double round4(double v) {
         return Math.round(v * 10000.0) / 10000.0;
     }
 
     // ─── Market summary (for list) ────────────────────────────────────
+
+    // ─── Undo Reconciliation ──────────────────────────────────────
+
+    /**
+     * Remove eventos de conciliacao do Amitiel (RECONCILED, DUST, e FEES/PNL com source AMITIEL_RECONCILIATION).
+     * Eventos do Gabriel (source=GABRIEL) sao preservados.
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> undoReconciliation(String slug) {
+        List<Event> events = eventRepository.findBySlugOrderByTimestampAsc(slug);
+
+        boolean hasReconciled = events.stream().anyMatch(e -> "RECONCILED".equals(e.getType()));
+        if (!hasReconciled) {
+            return Map.of("error", "Este mercado nao foi conciliado", "slug", slug);
+        }
+
+        List<String> removedIds = new ArrayList<>();
+        List<String> removedTypes = new ArrayList<>();
+
+        Set<String> amitielTypes = Set.of("RECONCILED", "DUST");
+
+        for (Event e : events) {
+            boolean remove = false;
+
+            if (amitielTypes.contains(e.getType())) {
+                remove = true;
+            } else if ("FEES".equals(e.getType()) || "PNL".equals(e.getType())) {
+                if (e.getPayload() instanceof Map<?, ?> payload) {
+                    if ("AMITIEL_RECONCILIATION".equals(payload.get("source"))) {
+                        remove = true;
+                    }
+                }
+            }
+
+            if (remove) {
+                eventRepository.deleteById(e.getId());
+                removedIds.add(e.getId());
+                removedTypes.add(e.getType());
+                log.info("[EV-UNDO] Removido evento: slug={}, type={}, id={}", slug, e.getType(), e.getId());
+            }
+        }
+
+        log.info("[EV-UNDO] Conciliacao desfeita: slug={}, removidos={}", slug, removedTypes);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success", true);
+        result.put("slug", slug);
+        result.put("removedCount", removedIds.size());
+        result.put("removedTypes", removedTypes);
+        return result;
+    }
 
     private Map<String, Object> buildMarketSummary(String slug, List<Event> events) {
         long marketUnixTime = extractUnixFromSlug(slug);

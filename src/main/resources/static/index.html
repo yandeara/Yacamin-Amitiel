@@ -847,8 +847,8 @@
                 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
                     <span class="page-title" id="pnl-history-title">PnL History</span>
                     <div class="mode-toggle" id="pnl-hist-mode-selector">
-                        <button class="mode-btn active" onclick="setPnlHistMode('sim')">SIM</button>
-                        <button class="mode-btn" onclick="setPnlHistMode('real')">REAL</button>
+                        <button class="mode-btn" onclick="setPnlHistMode('sim')">SIM</button>
+                        <button class="mode-btn active" onclick="setPnlHistMode('real')">REAL</button>
                     </div>
                     <div class="mode-toggle" id="pnl-hist-algo-selector">
                         <button class="mode-btn active" onclick="setPnlHistAlgo('ALPHA')">ALPHA</button>
@@ -916,9 +916,9 @@
                 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
                     <span class="page-title">Heatmap</span>
                     <div class="mode-toggle" id="heatmap-source-selector">
-                        <button class="mode-btn active" data-source="ALPHA" onclick="toggleHeatmapSource('ALPHA', this)" style="border-left:3px solid var(--accent);">ALPHA</button>
+                        <button class="mode-btn" data-source="ALPHA" onclick="toggleHeatmapSource('ALPHA', this)" style="border-left:3px solid var(--accent);">ALPHA</button>
                         <button class="mode-btn" data-source="GAMA" onclick="toggleHeatmapSource('GAMA', this)" style="border-left:3px solid var(--purple);">GAMA</button>
-                        <button class="mode-btn" data-source="REAL" onclick="toggleHeatmapSource('REAL', this)" style="border-left:3px solid var(--green);">REAL</button>
+                        <button class="mode-btn active" data-source="REAL" onclick="toggleHeatmapSource('REAL', this)" style="border-left:3px solid var(--green);">REAL</button>
                     </div>
                     <div class="mode-toggle" id="heatmap-metric-selector">
                         <button class="mode-btn active" onclick="toggleHeatmapMetric('pnl', this)">PnL</button>
@@ -1071,6 +1071,7 @@
                     <button class="heatmap-btn" id="wallet-refresh-btn" onclick="takeWalletSnapshot()">Atualizar Saldo</button>
                     <button class="heatmap-btn heatmap-btn-reset" onclick="resetWalletBaseline()">Nova Base</button>
                     <button class="heatmap-btn heatmap-btn-reset" id="wallet-recalc-btn" onclick="recalculateSystemPnl()">Recalcular PnL</button>
+                    <button class="heatmap-btn heatmap-btn-reset" onclick="downloadPnlChainJson()">Exportar PnL JSON</button>
                     <span id="wallet-status" style="font-size:11px;color:var(--text-dim);"></span>
                     <span id="wallet-auto-status" style="font-size:11px;color:var(--text-dim);margin-left:8px;"></span>
                 </div>
@@ -1184,7 +1185,7 @@
         /* ── State ────────────────────────────────────── */
         let currentPage = 'sim-pnl';
         let pnlHistAlgo = 'ALPHA';
-        let pnlHistMode = 'sim';
+        let pnlHistMode = 'real';
         /* ── DOM refs ─────────────────────────────────── */
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');
@@ -1364,7 +1365,7 @@
 
         /* ── Heatmap ────────────────────────────────────── */
         let heatmapSources = {};
-        let heatmapActiveSources = new Set(['ALPHA']);
+        let heatmapActiveSources = new Set(['REAL']);
         let heatmapFiltersInitialized = false;
         let heatmapMetrics = new Set(['pnl']);
 
@@ -2507,10 +2508,13 @@
 
             html += '</div>';
 
-            // Verify button
-            html += `<div style="margin:24px 0;display:flex;gap:12px;align-items:center;">
+            // Verify + Export buttons
+            html += `<div style="margin:24px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
                 <button id="ev-verify-btn" onclick="triggerEventVerification('${data.slug}')" style="padding:12px 24px;border-radius:8px;border:none;background:var(--green);color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;">
                     &#9745; Verificar no CLOB
+                </button>
+                <button onclick="downloadTimelineJson('${data.slug}')" style="padding:12px 24px;border-radius:8px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">
+                    &#8681; Exportar JSON
                 </button>
                 <span style="font-size:11px;color:var(--text-dim);">Consulta Gamma API + CLOB API e reconcilia com nossos eventos</span>
             </div>`;
@@ -2933,11 +2937,50 @@
                 </div>`;
             } else if (data.alreadyReconciled) {
                 html += `<div style="margin:24px 0;padding:16px;background:var(--surface);border:1px solid var(--green);border-left:4px solid var(--green);border-radius:10px;">
-                    <div style="font-size:13px;font-weight:700;color:var(--green);">&#10003; Este mercado ja foi conciliado manualmente</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <div style="font-size:13px;font-weight:700;color:var(--green);">&#10003; Este mercado ja foi conciliado manualmente</div>
+                        <button id="ev-undo-btn" onclick="undoReconciliation('${data.slug}')" style="padding:8px 16px;border-radius:6px;border:1px solid var(--red);background:transparent;color:var(--red);font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">
+                            Desfazer Conciliacao
+                        </button>
+                    </div>
+                    <span id="ev-undo-status" style="font-size:11px;color:var(--text-dim);"></span>
                 </div>`;
             }
 
             resultsContainer.innerHTML = html;
+        }
+
+        async function undoReconciliation(slug) {
+            if (!confirm('Tem certeza? Isso vai remover RECONCILED, DUST e eventos FEES/PNL criados pelo Amitiel. Eventos do Gabriel serao preservados.')) return;
+
+            const btn = document.getElementById('ev-undo-btn');
+            const status = document.getElementById('ev-undo-status');
+            btn.disabled = true;
+            btn.textContent = 'Removendo...';
+
+            try {
+                const res = await fetch(`/api/dashboard/events/undo-reconciliation?slug=${encodeURIComponent(slug)}`, { method: 'POST' });
+                if (res.status === 401) { window.location.href = '/login'; return; }
+                if (!res.ok) throw new Error(res.status);
+                const data = await res.json();
+
+                if (data.success) {
+                    status.style.color = 'var(--green)';
+                    status.textContent = `Conciliacao desfeita (${data.removedCount} eventos removidos). Recarregando...`;
+                    // Re-verify to refresh the view
+                    setTimeout(() => triggerEventVerification(slug), 1000);
+                } else {
+                    status.style.color = 'var(--red)';
+                    status.textContent = data.error || 'Erro';
+                    btn.disabled = false;
+                    btn.textContent = 'Desfazer Conciliacao';
+                }
+            } catch (e) {
+                status.style.color = 'var(--red)';
+                status.textContent = 'Erro: ' + e.message;
+                btn.disabled = false;
+                btn.textContent = 'Desfazer Conciliacao';
+            }
         }
 
         async function queryDustOnChain() {
@@ -4294,6 +4337,46 @@
 
             html += `</tbody></table></div>`;
             container.innerHTML = html;
+        }
+
+        /* ── JSON Export ─────────────────────────────── */
+
+        function downloadJson(data, filename) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function downloadTimelineJson(slug) {
+            try {
+                const res = await fetch(`/api/dashboard/events/timeline?slug=${encodeURIComponent(slug)}`);
+                if (res.status === 401) { window.location.href = '/login'; return; }
+                if (!res.ok) throw new Error(res.status);
+                const data = await res.json();
+                downloadJson(data, `timeline-${slug}.json`);
+            } catch (e) {
+                alert('Erro ao exportar: ' + e.message);
+            }
+        }
+
+        async function downloadPnlChainJson() {
+            const status = document.getElementById('wallet-status');
+            if (status) { status.style.color = 'var(--text-dim)'; status.textContent = 'Exportando...'; }
+            try {
+                const res = await fetch('/api/dashboard/wallet/export-pnl');
+                if (res.status === 401) { window.location.href = '/login'; return; }
+                if (!res.ok) throw new Error(res.status);
+                const data = await res.json();
+                const ts = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+                downloadJson(data, `pnl-chain-${ts}.json`);
+                if (status) { status.style.color = 'var(--green)'; status.textContent = 'JSON exportado!'; setTimeout(() => { status.textContent = ''; }, 3000); }
+            } catch (e) {
+                if (status) { status.style.color = 'var(--red)'; status.textContent = 'Erro: ' + e.message; }
+            }
         }
 
         /* ── Auto-Snapshot Status ────────────────────── */

@@ -236,5 +236,6 @@ public class PolymarketClobClient {
         @JsonProperty("bucket_index")
         private String bucketIndex;
         private String title;
+
     }
 }

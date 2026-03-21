@@ -157,6 +157,11 @@ public class DashboardController {
                 buyCost, sellRevenue, redeemPayout, clobTradeCount, dustAmount);
     }
 
+    @PostMapping("/events/undo-reconciliation")
+    public Map<String, Object> undoReconciliation(@RequestParam String slug) {
+        return eventTimelineService.undoReconciliation(slug);
+    }
+
     // ─── Sim Events ───────────────────────────────────────────────
 
     @GetMapping("/sim-events/markets")
@@ -232,6 +237,11 @@ public class DashboardController {
     @PostMapping("/wallet/reset-baseline")
     public Map<String, Object> resetWalletBaseline() {
         return walletBalanceService.resetBaseline();
+    }
+
+    @GetMapping("/wallet/export-pnl")
+    public Map<String, Object> exportPnlEvents() {
+        return walletBalanceService.exportPnlChain();
     }
 
     @PostMapping("/wallet/recalculate-pnl")
