@@ -1,0 +1,10 @@
+.git
+.idea
+.vscode
+.claude
+build
+logs
+*.iml
+*.ipr
+*.iws
+hft_result.csv

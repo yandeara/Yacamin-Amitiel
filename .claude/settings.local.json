@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs ls:*)",
+      "Bash(./gradlew build:*)",
+      "Bash(cd /d D:ProjetosYacaminYacamin-Amitiel)",
+      "Bash(grep -ri miguel --include=*.java --include=*.yaml --include=*.xml --include=*.html --include=*.gradle --include=*.properties .)",
+      "Bash(grep -ri miguel D:ProjetosYacaminYacamin-Amitiel --include=*.java --include=*.yaml --include=*.xml --include=*.html --include=*.gradle --include=*.properties)",
+      "Bash(find D:ProjetosYacaminYacamin-Amitiel -type f \\\\\\(-name *.java -o -name *.yaml -o -name *.xml -o -name *.html -o -name *.gradle -o -name *.properties \\\\\\))",
+      "Bash(grep -rl miguel D:ProjetosYacaminYacamin-Amitiel --include=*.java --include=*.yaml --include=*.xml --include=*.html --include=*.gradle --include=*.properties)",
+      "Bash(./gradlew compileJava)",
+      "Bash(./gradlew clean:*)",
+      "Bash(grep -E \"\\\\.\\(yaml|yml|md\\)$\")",
+      "WebSearch",
+      "Bash(git log:*)",
+      "WebFetch(domain:docs.polymarket.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(find /d/Projetos/Yacamin/Yacamin-Amitiel -name amitiel.log -o -name *.log)",
+      "Read(//c/Users/**)",
+      "Read(//d//**)",
+      "Bash(powershell.exe -Command \"Get-ChildItem -Path 'D:\\\\Projetos\\\\Yacamin' -Recurse -Filter 'amitiel.log' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName\" 2>/dev/null)",
+      "Bash(powershell.exe -Command \"Get-ChildItem -Path 'D:\\\\' -Recurse -Filter 'amitiel.log' -ErrorAction SilentlyContinue -Depth 6 | Select-Object -ExpandProperty FullName\" 2>/dev/null)",
+      "Bash(find /d/Projetos/Yacamin/Yacamin-Amitiel/src/main/java/br/com/yacamin/amitiel -type f -name *.java)",
+      "Bash(xargs grep:*)",
+      "Bash(find /d/Projetos/Yacamin/documentos -type f -name *.md -o -name *.txt -o -name *.pdf)",
+      "Bash(find D:/Projetos/Yacamin/Yacamin-Uriel/src -name *.java -type f)",
+      "Bash(xargs wc:*)",
+      "Bash(find /d/Projetos/Yacamin/Yacamin-Amitiel/src -type f -name *Listener*.java -o -type f -name *Adapter*.java)"
+    ]
+  }
+}

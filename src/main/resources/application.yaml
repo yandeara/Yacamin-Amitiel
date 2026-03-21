@@ -1,0 +1,31 @@
+server:
+  port: 8080
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+spring:
+  application:
+    name: Yacamin-Amitiel
+  mongodb:
+    uri: "${MONGODB_URI:mongodb://root:T%23fu1964@77.37.54.142:5432/yacamin-gabriel?authSource=admin&directConnection=true}"
+polymarket:
+  wallet-address: "0xBfEB032385e38b733150aacc91F5161815d65df0"
+  private-key: "0xe458802085a329c2011118d222b5b82b0e457df6623d7d777ec2c20a2e523b75"
+  ws:
+    api-key: "019ce365-e310-76ee-8d09-757c74d132a1"
+    secret: "rRQIioMjEwLn9dsOtvEkQCI5tePUbHv8xLHJiqxAflA="
+    pass: "63c7e2f6aa5a65fb46c3d1e747bc4376ad0438c9ae4105556670bd4624a27f38"
+  paths:
+    clob:
+      rest: https://clob.polymarket.com
+    gamma:
+      markets:
+        rest: https://gamma-api.polymarket.com/markets
+app:
+  auth:
+    password-hash: "${DASHBOARD_PASSWORD_HASH:$2a$10$sU99hPYdqD4uXPwirxIco.YjGPRysOPOuDToM95BFSLuWWotpRKB.}"

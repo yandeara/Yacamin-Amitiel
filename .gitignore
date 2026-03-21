@@ -1,0 +1,57 @@
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Log
+logs-dev/default/default.log
+logs-prd/default/default-bck.log
+logs-prd/default/default.log
+Codigo/Yacamin-Ishimodo/logs-dev/default/default.log
+Codigo/Yacamin-Ishimodo/logs-prd/default/default-bck.log
+Codigo/Yacamin-Ishimodo/logs-prd/default/default.log
+tdlib/db.sqlite
+tdlib/db.sqlite-wal
+tdlib/db.sqlite-shm
+tdlib/td.binlog
+/tdlib
+/src/main/resources/front/node_modules/
+/logs-prd/
+/logs/
+
+### Secrets (local profile)
+application-local.yaml
+hft_result.csv

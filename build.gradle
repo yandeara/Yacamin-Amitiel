@@ -1,0 +1,52 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.0.3'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'br.com.yacamin'
+version = '1.0.0'
+
+java {
+	sourceCompatibility = '21'
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+
+	implementation 'org.springframework.boot:spring-boot-starter'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-logging'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.security:spring-security-crypto'
+	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+
+	// ELK: structured JSON logs via TCP direto pro Logstash (async, zero impacto no hot path)
+	implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
+
+	implementation 'com.fasterxml.jackson.core:jackson-core:2.21.1'
+	implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.1'
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.1'
+
+	implementation 'org.web3j:core:5.0.2'
+
+    compileOnly 'org.projectlombok:lombok:1.18.42'
+	annotationProcessor 'org.projectlombok:lombok:1.18.42'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testCompileOnly 'org.projectlombok:lombok:1.18.42'
+	testAnnotationProcessor 'org.projectlombok:lombok:1.18.42'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
