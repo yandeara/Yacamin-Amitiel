@@ -176,10 +176,29 @@
             border: 1px solid var(--border);
             border-radius: 10px;
             transition: border-color 0.15s;
+            cursor: pointer;
         }
 
         .tl-item:hover {
             border-color: var(--accent);
+        }
+
+        .tl-json {
+            display: none;
+            margin-top: 10px;
+            padding: 10px 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 400px;
+            overflow-y: auto;
+            cursor: text;
+            user-select: text;
         }
 
         .tl-dot {
@@ -2277,6 +2296,18 @@
             container.innerHTML = html;
         }
 
+        function toggleTlJson(id, event) {
+            // Nao toggle se clicou em link, botao ou dentro do proprio JSON (pra poder selecionar texto)
+            if (event.target.closest('a, button, .tl-json')) return;
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.style.display = el.style.display === 'none' || !el.style.display ? 'block' : 'none';
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
         function evTypeClass(type) {
             if (type === 'RESIDUAL_CREATED') return 'tl-type-chain';
             if (type === 'MANUAL_CLOSE_PLACED') return 'tl-type-manual';
@@ -2381,8 +2412,9 @@
             timeline.forEach((ev, idx) => {
                 const dotClass = evDotClass(ev.type);
                 const typeClass = evTypeClass(ev.type);
+                const jsonId = `ev-json-${idx}`;
 
-                html += `<div class="tl-item">
+                html += `<div class="tl-item" onclick="toggleTlJson('${jsonId}', event)">
                     <div class="tl-dot ${dotClass}"></div>
                     <div class="tl-header">
                         <span class="tl-type ${typeClass}">${ev.type}</span>
@@ -2465,6 +2497,10 @@
                     });
                     html += '</div>';
                 }
+
+                // JSON expandivel
+                const evJson = JSON.stringify({slug: ev.slug || data.slug, timestamp: ev.timestamp, type: ev.type, payload: ev.payload}, null, 2);
+                html += `<div class="tl-json" id="${jsonId}">${escapeHtml(evJson)}</div>`;
 
                 html += '</div>';
             });
@@ -3806,11 +3842,12 @@
             const timeline = data.timeline || [];
             html += '<div class="tl-container">';
 
-            timeline.forEach(ev => {
+            timeline.forEach((ev, idx) => {
                 const dotClass = evDotClass(ev.type);
                 const typeClass = evTypeClass(ev.type);
+                const jsonId = `se-json-${idx}`;
 
-                html += `<div class="tl-item">
+                html += `<div class="tl-item" onclick="toggleTlJson('${jsonId}', event)">
                     <div class="tl-dot ${dotClass}"></div>
                     <div class="tl-header">
                         <span class="tl-type ${typeClass}">${ev.type}</span>
@@ -3889,6 +3926,10 @@
                     });
                     html += '</div>';
                 }
+
+                // JSON expandivel
+                const seJson = JSON.stringify({slug: ev.slug || data.slug, timestamp: ev.timestamp, type: ev.type, algorithm: ev.algorithm, payload: ev.payload}, null, 2);
+                html += `<div class="tl-json" id="${jsonId}">${escapeHtml(seJson)}</div>`;
 
                 html += '</div>';
             });
