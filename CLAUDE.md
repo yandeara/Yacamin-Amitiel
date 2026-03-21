@@ -16,6 +16,7 @@ Project-wide documentation lives in `D:\Projetos\Yacamin\documentos\`. When the 
 - `yacamin-configuration.md` — Configuration persistence pattern shared by all modules (trading_config collection)
 - `amitiel-saldo-wallet.md` — Wallet balance monitoring, auto-snapshot scheduler, and how to read PnL/balance from latest snapshot
 - `amitiel-json-exports.md` — JSON export formats (timeline, PnL chain, snapshots) for cross-module consumption
+- `amitiel-erc1155-balance-query.md` — How to query ERC-1155 conditional token balances on-chain (dust detection, for Uriel replication)
 
 ## Build & Run Commands
 
