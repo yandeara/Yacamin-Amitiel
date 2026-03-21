@@ -30,7 +30,8 @@
       "Bash(grep -E '^\\\\.\"\"\"\"[A-Z_]{3,}\"\"\"\"')",
       "Bash(sed 's/^\\\\.\"\"\"\"//')",
       "Bash(sed 's/\"\"\"\"$//')",
-      "Bash(grep -v \"//\")"
+      "Bash(grep -v \"//\")",
+      "Bash(find D:/Projetos/Yacamin/Yacamin-Gabriel/src -name TradingConfig* -type f)"
     ]
   }
 }

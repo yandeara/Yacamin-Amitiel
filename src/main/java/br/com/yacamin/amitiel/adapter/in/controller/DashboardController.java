@@ -7,6 +7,9 @@ import br.com.yacamin.amitiel.application.service.event.EventHeatmapService;
 import br.com.yacamin.amitiel.application.service.event.SimEventTimelineService;
 import br.com.yacamin.amitiel.application.service.verification.VerificationService;
 import br.com.yacamin.amitiel.application.service.wallet.WalletBalanceService;
+import br.com.yacamin.amitiel.application.service.wallet.AutoSnapshotScheduler;
+import br.com.yacamin.amitiel.application.service.config.AmitielConfigService;
+import br.com.yacamin.amitiel.application.service.config.AmitielConfigPersistenceService;
 import br.com.yacamin.amitiel.adapter.out.rest.polymarket.PolymarketRedeemService;
 import br.com.yacamin.amitiel.application.service.wallet.DustRedeemService;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +36,9 @@ public class DashboardController {
     private final WalletBalanceService walletBalanceService;
     private final PolymarketRedeemService polymarketRedeemService;
     private final DustRedeemService dustRedeemService;
+    private final AmitielConfigService configService;
+    private final AmitielConfigPersistenceService configPersistenceService;
+    private final AutoSnapshotScheduler autoSnapshotScheduler;
 
     @GetMapping("/sim-pnl")
     public Map<String, Object> getSimPnl(
@@ -197,8 +203,25 @@ public class DashboardController {
     // ─── Wallet Balance ──────────────────────────────────────────
 
     @GetMapping("/wallet/snapshots")
-    public Map<String, Object> getWalletSnapshots() {
-        return walletBalanceService.listSnapshots();
+    public Map<String, Object> getWalletSnapshots(
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo,
+            @RequestParam(defaultValue = "0") int hourFrom,
+            @RequestParam(defaultValue = "23") int hourTo,
+            @RequestParam(required = false) String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+
+        long fromMs = 0;
+        long toMs = Long.MAX_VALUE;
+        if (dateFrom != null && dateTo != null) {
+            LocalDate dayFrom = LocalDate.parse(dateFrom);
+            LocalDate dayTo = LocalDate.parse(dateTo);
+            fromMs = dayFrom.atTime(LocalTime.of(hourFrom, 0)).atZone(SP_ZONE).toInstant().toEpochMilli();
+            toMs = dayTo.atTime(LocalTime.of(hourTo, 59, 59)).atZone(SP_ZONE).toInstant().toEpochMilli();
+        }
+
+        return walletBalanceService.listSnapshots(fromMs, toMs, type, page, size);
     }
 
     @PostMapping("/wallet/snapshot")
@@ -209,6 +232,49 @@ public class DashboardController {
     @PostMapping("/wallet/reset-baseline")
     public Map<String, Object> resetWalletBaseline() {
         return walletBalanceService.resetBaseline();
+    }
+
+    @PostMapping("/wallet/recalculate-pnl")
+    public Map<String, Object> recalculateSystemPnl() {
+        return walletBalanceService.recalculateSystemPnl();
+    }
+
+    @GetMapping("/wallet/auto-status")
+    public Map<String, Object> getAutoSnapshotStatus() {
+        return autoSnapshotScheduler.getAutoStatus();
+    }
+
+    // ─── Config ───────────────────────────────────────────────────
+
+    @GetMapping("/config")
+    public Map<String, Object> getConfig() {
+        return configService.getConfigMap();
+    }
+
+    @SuppressWarnings("unchecked")
+    @PostMapping("/config")
+    public Map<String, Object> updateConfig(@RequestBody Map<String, Object> body) {
+        if (body.containsKey("autoSnapshotEnabled")) {
+            configService.setAutoSnapshotEnabled(Boolean.TRUE.equals(body.get("autoSnapshotEnabled")));
+        }
+        if (body.containsKey("autoSnapshotWindows")) {
+            Object raw = body.get("autoSnapshotWindows");
+            if (raw instanceof List<?> list) {
+                List<String> windows = list.stream()
+                        .map(Object::toString)
+                        .filter(s -> s.matches("\\d{2}:\\d{2}"))
+                        .toList();
+                if (!windows.isEmpty()) {
+                    configService.setAutoSnapshotWindows(windows);
+                }
+            }
+        }
+        try {
+            configPersistenceService.save();
+        } catch (Exception e) {
+            // Config salva em memoria, falha de persistencia nao bloqueia
+        }
+        return configService.getConfigMap();
     }
 
     // ─── Dust Redeem ─────────────────────────────────────────────

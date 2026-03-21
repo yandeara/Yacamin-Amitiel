@@ -1,15 +1,17 @@
 package br.com.yacamin.amitiel.application.service.wallet;
 
-import br.com.yacamin.amitiel.adapter.out.persistence.EventRepository;
 import br.com.yacamin.amitiel.adapter.out.persistence.WalletSnapshotRepository;
 import br.com.yacamin.amitiel.adapter.out.rest.polymarket.ClobAuthSigner;
-import br.com.yacamin.amitiel.domain.Event;
 import br.com.yacamin.amitiel.domain.WalletSnapshot;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -45,7 +47,7 @@ public class WalletBalanceService {
     private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
     private final WalletSnapshotRepository snapshotRepository;
-    private final EventRepository eventRepository;
+    private final MongoTemplate mongoTemplate;
     private final ClobAuthSigner authSigner;
     private final ObjectMapper objectMapper;
 
@@ -57,18 +59,65 @@ public class WalletBalanceService {
 
     // ─── List snapshots ──────────────────────────────────────────
 
-    public Map<String, Object> listSnapshots() {
-        List<WalletSnapshot> snapshots = snapshotRepository.findAllByOrderByTimestampDesc();
+    public Map<String, Object> listSnapshots(long fromMs, long toMs, String type, int page, int size) {
+        // Query com filtro de timestamp
+        Criteria criteria = new Criteria();
+        if (fromMs > 0 || toMs < Long.MAX_VALUE) {
+            criteria = criteria.and("timestamp").gte(fromMs).lte(toMs);
+        }
+
+        // Filtro por tipo
+        if ("baseline".equals(type)) {
+            criteria = criteria.and("baseline").is(true);
+        } else if ("divergent".equals(type)) {
+            criteria = new Criteria().andOperator(
+                    criteria,
+                    Criteria.where("baseline").is(false),
+                    new Criteria().orOperator(
+                            Criteria.where("divergence").gt(0.0009),
+                            Criteria.where("divergence").lt(-0.0009)
+                    )
+            );
+        } else if ("ok".equals(type)) {
+            criteria = criteria.and("baseline").is(false)
+                    .and("divergence").gte(-0.0009).lte(0.0009);
+        }
+
+        long total = mongoTemplate.count(
+                org.springframework.data.mongodb.core.query.Query.query(criteria), WalletSnapshot.class);
+
+        List<WalletSnapshot> snapshots = mongoTemplate.find(
+                org.springframework.data.mongodb.core.query.Query.query(criteria)
+                        .with(org.springframework.data.domain.Sort.by(
+                                org.springframework.data.domain.Sort.Direction.DESC, "timestamp"))
+                        .skip((long) page * size)
+                        .limit(size),
+                WalletSnapshot.class);
+
+        // Sempre incluir o latest para o card de destaque (so na primeira pagina sem filtros)
+        WalletSnapshot latest = null;
+        if (page == 0) {
+            Optional<WalletSnapshot> latestOpt = snapshotRepository.findFirstByOrderByTimestampDesc();
+            latest = latestOpt.orElse(null);
+        }
 
         List<Map<String, Object>> items = new ArrayList<>();
         for (WalletSnapshot s : snapshots) {
             items.add(formatSnapshot(s));
         }
 
+        int totalPages = (int) Math.ceil((double) total / size);
+
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("snapshots", items);
-        result.put("total", snapshots.size());
+        result.put("total", total);
+        result.put("page", page);
+        result.put("size", size);
+        result.put("totalPages", totalPages);
         result.put("walletAddress", Keys.toChecksumAddress(walletAddress));
+        if (latest != null) {
+            result.put("latest", formatSnapshot(latest));
+        }
         return result;
     }
 
@@ -154,26 +203,89 @@ public class WalletBalanceService {
     // ─── System PnL calculation ──────────────────────────────────
 
     /**
-     * Calcula PnL real acumulado do sistema somando todos os eventos PNL
-     * dos mercados que ja foram conciliados (RECONCILED).
+     * Calcula PnL incremental: ultimo snapshot + soma dos PNL events desde entao.
+     * Se nao existir snapshot anterior, faz calculo completo.
      */
-    @SuppressWarnings("unchecked")
     private double calculateSystemPnl() {
-        // Get all RECONCILED events (these have the pnlReal in the associated PNL events)
-        List<Event> allEvents = eventRepository.findByTypeAndTimestampGreaterThanEqual("PNL", 0);
+        Optional<WalletSnapshot> lastOpt = snapshotRepository.findFirstByOrderByTimestampDesc();
+        if (lastOpt.isPresent()) {
+            WalletSnapshot last = lastOpt.get();
+            double delta = aggregatePnlSince(last.getTimestamp());
+            double total = round4(last.getSystemPnl() + delta);
+            log.info("[WALLET] SystemPnl incremental: base={} + delta={} = {}", last.getSystemPnl(), delta, total);
+            return total;
+        }
+        return calculateSystemPnlFull();
+    }
 
-        double totalPnl = 0;
-        for (Event e : allEvents) {
-            if (e.getPayload() instanceof Map) {
-                Map<String, Object> payload = (Map<String, Object>) e.getPayload();
-                Object pnlVal = payload.get("pnlReal");
-                if (pnlVal instanceof Number) {
-                    totalPnl += ((Number) pnlVal).doubleValue();
-                }
+    /**
+     * Calcula PnL completo desde o inicio via aggregation pipeline no MongoDB.
+     * $match type=PNL → $group $sum payload.pnlReal
+     */
+    public double calculateSystemPnlFull() {
+        double total = aggregatePnlSince(0);
+        log.info("[WALLET] SystemPnl full recalc: {}", total);
+        return total;
+    }
+
+    /**
+     * MongoDB aggregation: soma payload.pnlReal de todos os eventos PNL com timestamp > sinceMs.
+     */
+    private double aggregatePnlSince(long sinceMs) {
+        Aggregation agg = Aggregation.newAggregation(
+                Aggregation.match(Criteria.where("type").is("PNL").and("timestamp").gt(sinceMs)),
+                Aggregation.group().sum("payload.pnlReal").as("total")
+        );
+
+        AggregationResults<Map> results = mongoTemplate.aggregate(agg, "events", Map.class);
+        Map result = results.getUniqueMappedResult();
+        if (result == null) return 0;
+        Object val = result.get("total");
+        return val instanceof Number ? round4(((Number) val).doubleValue()) : 0;
+    }
+
+    /**
+     * Recalcula PnL do sistema do zero (aggregation completa) e salva novo snapshot.
+     */
+    public Map<String, Object> recalculateSystemPnl() {
+        double fullPnl = calculateSystemPnlFull();
+
+        // Atualiza o ultimo snapshot se existir, senao retorna o valor
+        Optional<WalletSnapshot> lastOpt = snapshotRepository.findFirstByOrderByTimestampDesc();
+        if (lastOpt.isPresent()) {
+            WalletSnapshot last = lastOpt.get();
+            double oldPnl = last.getSystemPnl();
+            last.setSystemPnl(fullPnl);
+
+            // Recalcular delta e divergencia
+            Optional<WalletSnapshot> baselineOpt = snapshotRepository.findFirstByBaselineTrueOrderByTimestampDesc();
+            if (baselineOpt.isPresent()) {
+                WalletSnapshot baseline = baselineOpt.get();
+                double delta = round4(fullPnl - baseline.getSystemPnl());
+                double expected = round4(baseline.getClobBalance() + delta);
+                double divergence = round4(last.getActualBalance() - expected);
+                last.setSystemPnlDelta(delta);
+                last.setExpectedBalance(expected);
+                last.setDivergence(divergence);
             }
+
+            snapshotRepository.save(last);
+            log.info("[WALLET] SystemPnl recalculado: {} -> {}", oldPnl, fullPnl);
+
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("success", true);
+            result.put("previousPnl", oldPnl);
+            result.put("recalculatedPnl", fullPnl);
+            result.put("difference", round4(fullPnl - oldPnl));
+            result.put("snapshot", formatSnapshot(last));
+            return result;
         }
 
-        return round4(totalPnl);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success", true);
+        result.put("recalculatedPnl", fullPnl);
+        result.put("note", "Nenhum snapshot existente para atualizar");
+        return result;
     }
 
     // ─── CLOB Balance query ──────────────────────────────────────

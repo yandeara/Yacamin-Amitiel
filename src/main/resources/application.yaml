@@ -29,3 +29,13 @@ polymarket:
 app:
   auth:
     password-hash: "${DASHBOARD_PASSWORD_HASH:$2a$10$sU99hPYdqD4uXPwirxIco.YjGPRysOPOuDToM95BFSLuWWotpRKB.}"
+  auto-snapshot:
+    enabled: true
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+app:
+  auto-snapshot:
+    enabled: false

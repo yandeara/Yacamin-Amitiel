@@ -13,6 +13,8 @@ Amitiel does **not** execute trades or connect to WebSockets. It is a read-heavy
 Project-wide documentation lives in `D:\Projetos\Yacamin\documentos\`. When the user references "documentacao" or "documentos", always look in that folder. Key files:
 
 - `yacamin-eventos.md` — Catalog of all MongoDB events emitted by every Yacamin module (Gabriel, Miguel, Uriel, Amitiel)
+- `yacamin-configuration.md` — Configuration persistence pattern shared by all modules (trading_config collection)
+- `amitiel-saldo-wallet.md` — Wallet balance monitoring, auto-snapshot scheduler, and how to read PnL/balance from latest snapshot
 
 ## Build & Run Commands
 
