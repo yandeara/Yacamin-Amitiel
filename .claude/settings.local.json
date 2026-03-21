@@ -26,7 +26,11 @@
       "Bash(find /d/Projetos/Yacamin/documentos -type f -name *.md -o -name *.txt -o -name *.pdf)",
       "Bash(find D:/Projetos/Yacamin/Yacamin-Uriel/src -name *.java -type f)",
       "Bash(xargs wc:*)",
-      "Bash(find /d/Projetos/Yacamin/Yacamin-Amitiel/src -type f -name *Listener*.java -o -type f -name *Adapter*.java)"
+      "Bash(find /d/Projetos/Yacamin/Yacamin-Amitiel/src -type f -name *Listener*.java -o -type f -name *Adapter*.java)",
+      "Bash(grep -E '^\\\\.\"\"\"\"[A-Z_]{3,}\"\"\"\"')",
+      "Bash(sed 's/^\\\\.\"\"\"\"//')",
+      "Bash(sed 's/\"\"\"\"$//')",
+      "Bash(grep -v \"//\")"
     ]
   }
 }

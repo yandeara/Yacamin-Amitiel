@@ -1010,6 +1010,10 @@
                         <button class="mode-btn" onclick="setSeSort('asc')">Antigo</button>
                         <button class="mode-btn active" onclick="setSeSort('desc')">Recente</button>
                     </div>
+                    <div class="mode-toggle" id="se-filter-selector">
+                        <button class="mode-btn" onclick="setSeFilter('')">Todos</button>
+                        <button class="mode-btn active" onclick="setSeFilter('active_only')">Com Atividade</button>
+                    </div>
                     <button class="heatmap-btn" onclick="fetchSimEventMarkets()">Buscar</button>
                 </div>
             </div>
@@ -1068,7 +1072,8 @@
                         <button class="mode-btn active" onclick="setEvSort('desc')">Recente</button>
                     </div>
                     <div class="mode-toggle" id="ev-filter-selector">
-                        <button class="mode-btn active" onclick="setEvFilter('')">Todos</button>
+                        <button class="mode-btn" onclick="setEvFilter('')">Todos</button>
+                        <button class="mode-btn active" onclick="setEvFilter('active_only')">Com Atividade</button>
                         <button class="mode-btn" onclick="setEvFilter('pending_reconciliation')">Pendente Concilia&#231;&#227;o</button>
                     </div>
                     <button class="heatmap-btn" onclick="fetchEventMarkets()">Buscar</button>
@@ -2031,7 +2036,7 @@
         let evFiltersInitialized = false;
         let evCurrentPage = 0;
         let evSort = 'desc';
-        let evFilter = '';
+        let evFilter = 'active_only';
         let evDetailMode = false;
 
         function initEvFilters() {
@@ -2066,9 +2071,9 @@
 
         function setEvFilter(f) {
             evFilter = f;
+            const labels = {'': 'Todos', 'active_only': 'Com Atividade', 'pending_reconciliation': 'Pendente Conciliação'};
             document.querySelectorAll('#ev-filter-selector .mode-btn').forEach(btn => {
-                const isTodos = btn.textContent.trim() === 'Todos';
-                btn.classList.toggle('active', (f === '' && isTodos) || (f === 'pending_reconciliation' && !isTodos));
+                btn.classList.toggle('active', btn.textContent.trim() === labels[f]);
             });
         }
 
@@ -3458,6 +3463,7 @@
         let seCurrentPage = 0;
         let seSort = 'desc';
         let seAlgo = 'ALPHA';
+        let seFilter = 'active_only';
 
         function initSeFilters() {
             if (seFiltersInitialized) return;
@@ -3497,6 +3503,14 @@
             });
         }
 
+        function setSeFilter(f) {
+            seFilter = f;
+            document.querySelectorAll('#se-filter-selector .mode-btn').forEach(btn => {
+                const labels = {'': 'Todos', 'active_only': 'Com Atividade'};
+                btn.classList.toggle('active', btn.textContent.trim() === labels[f]);
+            });
+        }
+
         function seBackToList() {
             document.getElementById('se-back-btn').style.display = 'none';
             document.getElementById('se-filters').style.display = 'flex';
@@ -3518,9 +3532,10 @@
             const hourFrom = document.getElementById('se-hour-from').value;
             const hourTo = document.getElementById('se-hour-to').value;
             const algoParam = seAlgo ? '&algorithm=' + seAlgo : '';
+            const filterParam = seFilter ? '&filter=' + seFilter : '';
 
             try {
-                const res = await fetch(`/api/dashboard/sim-events/markets?date=${date}&hourFrom=${hourFrom}&hourTo=${hourTo}&page=${seCurrentPage}&size=20&sort=${seSort}${algoParam}`);
+                const res = await fetch(`/api/dashboard/sim-events/markets?date=${date}&hourFrom=${hourFrom}&hourTo=${hourTo}&page=${seCurrentPage}&size=20&sort=${seSort}${algoParam}${filterParam}`);
                 if (res.status === 401) { window.location.href = '/login'; return; }
                 if (!res.ok) throw new Error(res.status);
                 const data = await res.json();

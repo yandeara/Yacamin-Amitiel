@@ -47,6 +47,14 @@ public class EventTimelineService {
                 // Manter apenas: tem PNL mas NAO tem RECONCILED
                 return !types.contains("PNL") || types.contains("RECONCILED");
             });
+        } else if ("active_only".equals(filter)) {
+            Set<String> irrelevant = Set.of("RESOLVE", "BLOCK_COMPLETED");
+            grouped.entrySet().removeIf(entry -> {
+                for (Event e : entry.getValue()) {
+                    if (!irrelevant.contains(e.getType())) return false;
+                }
+                return true;
+            });
         }
 
         List<Map.Entry<String, List<Event>>> entries = new ArrayList<>(grouped.entrySet());

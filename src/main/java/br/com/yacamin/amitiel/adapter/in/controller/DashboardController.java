@@ -159,13 +159,14 @@ public class DashboardController {
             @RequestParam(required = false) String algorithm,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "desc") String sort) {
+            @RequestParam(defaultValue = "desc") String sort,
+            @RequestParam(required = false) String filter) {
 
         LocalDate day = LocalDate.parse(date);
         long fromMs = day.atTime(LocalTime.of(hourFrom, 0)).atZone(SP_ZONE).toInstant().toEpochMilli();
         long toMs = day.atTime(LocalTime.of(hourTo, 59, 59)).atZone(SP_ZONE).toInstant().toEpochMilli();
 
-        return simEventTimelineService.listMarkets(fromMs, toMs, algorithm, page, size, sort);
+        return simEventTimelineService.listMarkets(fromMs, toMs, algorithm, page, size, sort, filter);
     }
 
     @GetMapping("/sim-events/timeline")

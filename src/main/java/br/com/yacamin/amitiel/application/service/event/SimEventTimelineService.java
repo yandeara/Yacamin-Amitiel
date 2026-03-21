@@ -25,7 +25,7 @@ public class SimEventTimelineService {
      * Lista mercados simulados agrupados por slug, filtrado por algorithm, com paginacao.
      */
     public Map<String, Object> listMarkets(long fromMs, long toMs, String algorithm,
-                                            int page, int size, String sort) {
+                                            int page, int size, String sort, String filter) {
         List<SimEvent> events = (algorithm != null && !algorithm.isBlank())
                 ? simEventRepository.findByAlgorithmAndTimestampBetweenOrderByTimestampDesc(algorithm, fromMs, toMs)
                 : simEventRepository.findByTimestampBetweenOrderByTimestampDesc(fromMs, toMs);
@@ -34,6 +34,16 @@ public class SimEventTimelineService {
         Map<String, List<SimEvent>> grouped = new LinkedHashMap<>();
         for (SimEvent e : events) {
             grouped.computeIfAbsent(e.getSlug(), k -> new ArrayList<>()).add(e);
+        }
+
+        // Filtro: esconder mercados sem interacao (so RESOLVE)
+        if ("active_only".equals(filter)) {
+            grouped.entrySet().removeIf(entry -> {
+                for (SimEvent e : entry.getValue()) {
+                    if (!"RESOLVE".equals(e.getType())) return false;
+                }
+                return true;
+            });
         }
 
         List<Map.Entry<String, List<SimEvent>>> entries = new ArrayList<>(grouped.entrySet());
