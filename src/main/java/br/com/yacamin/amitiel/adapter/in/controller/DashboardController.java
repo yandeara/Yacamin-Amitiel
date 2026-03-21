@@ -109,7 +109,8 @@ public class DashboardController {
 
     @GetMapping("/events/markets")
     public Map<String, Object> getEventMarkets(
-            @RequestParam String date,
+            @RequestParam String dateFrom,
+            @RequestParam String dateTo,
             @RequestParam(defaultValue = "0") int hourFrom,
             @RequestParam(defaultValue = "23") int hourTo,
             @RequestParam(defaultValue = "0") int page,
@@ -117,9 +118,10 @@ public class DashboardController {
             @RequestParam(defaultValue = "desc") String sort,
             @RequestParam(required = false) String filter) {
 
-        LocalDate day = LocalDate.parse(date);
-        long fromMs = day.atTime(LocalTime.of(hourFrom, 0)).atZone(SP_ZONE).toInstant().toEpochMilli();
-        long toMs = day.atTime(LocalTime.of(hourTo, 59, 59)).atZone(SP_ZONE).toInstant().toEpochMilli();
+        LocalDate dayFrom = LocalDate.parse(dateFrom);
+        LocalDate dayTo = LocalDate.parse(dateTo);
+        long fromMs = dayFrom.atTime(LocalTime.of(hourFrom, 0)).atZone(SP_ZONE).toInstant().toEpochMilli();
+        long toMs = dayTo.atTime(LocalTime.of(hourTo, 59, 59)).atZone(SP_ZONE).toInstant().toEpochMilli();
 
         return eventTimelineService.listMarkets(fromMs, toMs, page, size, sort, filter);
     }
@@ -153,7 +155,8 @@ public class DashboardController {
 
     @GetMapping("/sim-events/markets")
     public Map<String, Object> getSimEventMarkets(
-            @RequestParam String date,
+            @RequestParam String dateFrom,
+            @RequestParam String dateTo,
             @RequestParam(defaultValue = "0") int hourFrom,
             @RequestParam(defaultValue = "23") int hourTo,
             @RequestParam(required = false) String algorithm,
@@ -162,9 +165,10 @@ public class DashboardController {
             @RequestParam(defaultValue = "desc") String sort,
             @RequestParam(required = false) String filter) {
 
-        LocalDate day = LocalDate.parse(date);
-        long fromMs = day.atTime(LocalTime.of(hourFrom, 0)).atZone(SP_ZONE).toInstant().toEpochMilli();
-        long toMs = day.atTime(LocalTime.of(hourTo, 59, 59)).atZone(SP_ZONE).toInstant().toEpochMilli();
+        LocalDate dayFrom = LocalDate.parse(dateFrom);
+        LocalDate dayTo = LocalDate.parse(dateTo);
+        long fromMs = dayFrom.atTime(LocalTime.of(hourFrom, 0)).atZone(SP_ZONE).toInstant().toEpochMilli();
+        long toMs = dayTo.atTime(LocalTime.of(hourTo, 59, 59)).atZone(SP_ZONE).toInstant().toEpochMilli();
 
         return simEventTimelineService.listMarkets(fromMs, toMs, algorithm, page, size, sort, filter);
     }

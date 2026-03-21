@@ -992,14 +992,24 @@
                 </div>
                 <div id="se-filters" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;">
                     <div class="heatmap-filter-group">
-                        <label>Dia:</label>
-                        <input type="date" id="se-date" class="heatmap-input" style="width:140px;">
+                        <label>De:</label>
+                        <input type="date" id="se-date-from" class="heatmap-input" style="width:140px;">
+                    </div>
+                    <div class="heatmap-filter-group">
+                        <label>At&#233;:</label>
+                        <input type="date" id="se-date-to" class="heatmap-input" style="width:140px;">
                     </div>
                     <div class="heatmap-filter-group">
                         <label>Horas:</label>
                         <select id="se-hour-from"></select>
                         <span style="color:var(--text-dim);">a</span>
                         <select id="se-hour-to"></select>
+                    </div>
+                    <div class="mode-toggle" id="se-range-selector">
+                        <button class="mode-btn" onclick="setSeRange('today')">Hoje</button>
+                        <button class="mode-btn active" onclick="setSeRange('7d')">7 dias</button>
+                        <button class="mode-btn" onclick="setSeRange('30d')">30 dias</button>
+                        <button class="mode-btn" onclick="setSeRange('all')">Tudo</button>
                     </div>
                     <div class="mode-toggle" id="se-algo-selector">
                         <button class="mode-btn active" onclick="setSeAlgo('ALPHA')">ALPHA</button>
@@ -1058,14 +1068,24 @@
                 </div>
                 <div id="ev-filters" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;">
                     <div class="heatmap-filter-group">
-                        <label>Dia:</label>
-                        <input type="date" id="ev-date" class="heatmap-input" style="width:140px;">
+                        <label>De:</label>
+                        <input type="date" id="ev-date-from" class="heatmap-input" style="width:140px;">
+                    </div>
+                    <div class="heatmap-filter-group">
+                        <label>At&#233;:</label>
+                        <input type="date" id="ev-date-to" class="heatmap-input" style="width:140px;">
                     </div>
                     <div class="heatmap-filter-group">
                         <label>Horas:</label>
                         <select id="ev-hour-from"></select>
                         <span style="color:var(--text-dim);">a</span>
                         <select id="ev-hour-to"></select>
+                    </div>
+                    <div class="mode-toggle" id="ev-range-selector">
+                        <button class="mode-btn" onclick="setEvRange('today')">Hoje</button>
+                        <button class="mode-btn active" onclick="setEvRange('7d')">7 dias</button>
+                        <button class="mode-btn" onclick="setEvRange('30d')">30 dias</button>
+                        <button class="mode-btn" onclick="setEvRange('all')">Tudo</button>
                     </div>
                     <div class="mode-toggle" id="ev-sort-selector">
                         <button class="mode-btn" onclick="setEvSort('asc')">Antigo</button>
@@ -1082,8 +1102,8 @@
             <div class="page-body" style="padding:20px 24px;">
                 <div id="events-container">
                     <div class="empty-state">
-                        <h2>Selecione uma data</h2>
-                        <p>Escolha um dia e intervalo de horas para ver os mercados com eventos.</p>
+                        <h2>Selecione um periodo</h2>
+                        <p>Escolha o intervalo de datas e clique em Buscar.</p>
                     </div>
                 </div>
             </div>
@@ -2039,6 +2059,10 @@
         let evFilter = 'active_only';
         let evDetailMode = false;
 
+        function fmtDate(d) {
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+
         function initEvFilters() {
             if (evFiltersInitialized) return;
             evFiltersInitialized = true;
@@ -2057,9 +2081,28 @@
             hourFrom.value = 0;
             hourTo.value = 23;
 
+            setEvRange('7d');
+        }
+
+        function setEvRange(range) {
             const now = new Date();
-            document.getElementById('ev-date').value =
-                `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            const today = fmtDate(now);
+            let from = today, to = today;
+            if (range === '7d') {
+                const d = new Date(now); d.setDate(d.getDate() - 6);
+                from = fmtDate(d);
+            } else if (range === '30d') {
+                const d = new Date(now); d.setDate(d.getDate() - 29);
+                from = fmtDate(d);
+            } else if (range === 'all') {
+                from = '2020-01-01';
+            }
+            document.getElementById('ev-date-from').value = from;
+            document.getElementById('ev-date-to').value = to;
+            document.querySelectorAll('#ev-range-selector .mode-btn').forEach(btn => {
+                const labels = {'today':'Hoje','7d':'7 dias','30d':'30 dias','all':'Tudo'};
+                btn.classList.toggle('active', btn.textContent.trim() === labels[range]);
+            });
         }
 
         function setEvSort(s) {
@@ -2090,9 +2133,10 @@
             const container = document.getElementById('events-container');
             container.innerHTML = '<div class="empty-state"><h2>Carregando...</h2></div>';
 
-            const date = document.getElementById('ev-date').value;
-            if (!date) {
-                container.innerHTML = '<div class="empty-state"><h2>Selecione uma data</h2></div>';
+            const dateFrom = document.getElementById('ev-date-from').value;
+            const dateTo = document.getElementById('ev-date-to').value;
+            if (!dateFrom || !dateTo) {
+                container.innerHTML = '<div class="empty-state"><h2>Selecione as datas</h2></div>';
                 return;
             }
 
@@ -2100,7 +2144,7 @@
             const hourTo = document.getElementById('ev-hour-to').value;
 
             try {
-                let evUrl = `/api/dashboard/events/markets?date=${date}&hourFrom=${hourFrom}&hourTo=${hourTo}&page=${evCurrentPage}&size=20&sort=${evSort}`;
+                let evUrl = `/api/dashboard/events/markets?dateFrom=${dateFrom}&dateTo=${dateTo}&hourFrom=${hourFrom}&hourTo=${hourTo}&page=${evCurrentPage}&size=20&sort=${evSort}`;
                 if (evFilter) evUrl += `&filter=${evFilter}`;
                 const res = await fetch(evUrl);
                 if (res.status === 401) { window.location.href = '/login'; return; }
@@ -3483,9 +3527,28 @@
             hourFrom.value = 0;
             hourTo.value = 23;
 
+            setSeRange('7d');
+        }
+
+        function setSeRange(range) {
             const now = new Date();
-            document.getElementById('se-date').value =
-                `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            const today = fmtDate(now);
+            let from = today, to = today;
+            if (range === '7d') {
+                const d = new Date(now); d.setDate(d.getDate() - 6);
+                from = fmtDate(d);
+            } else if (range === '30d') {
+                const d = new Date(now); d.setDate(d.getDate() - 29);
+                from = fmtDate(d);
+            } else if (range === 'all') {
+                from = '2020-01-01';
+            }
+            document.getElementById('se-date-from').value = from;
+            document.getElementById('se-date-to').value = to;
+            document.querySelectorAll('#se-range-selector .mode-btn').forEach(btn => {
+                const labels = {'today':'Hoje','7d':'7 dias','30d':'30 dias','all':'Tudo'};
+                btn.classList.toggle('active', btn.textContent.trim() === labels[range]);
+            });
         }
 
         function setSeAlgo(a) {
@@ -3523,9 +3586,10 @@
             const container = document.getElementById('sim-events-container');
             container.innerHTML = '<div class="empty-state"><h2>Carregando...</h2></div>';
 
-            const date = document.getElementById('se-date').value;
-            if (!date) {
-                container.innerHTML = '<div class="empty-state"><h2>Selecione uma data</h2></div>';
+            const dateFrom = document.getElementById('se-date-from').value;
+            const dateTo = document.getElementById('se-date-to').value;
+            if (!dateFrom || !dateTo) {
+                container.innerHTML = '<div class="empty-state"><h2>Selecione as datas</h2></div>';
                 return;
             }
 
@@ -3535,7 +3599,7 @@
             const filterParam = seFilter ? '&filter=' + seFilter : '';
 
             try {
-                const res = await fetch(`/api/dashboard/sim-events/markets?date=${date}&hourFrom=${hourFrom}&hourTo=${hourTo}&page=${seCurrentPage}&size=20&sort=${seSort}${algoParam}${filterParam}`);
+                const res = await fetch(`/api/dashboard/sim-events/markets?dateFrom=${dateFrom}&dateTo=${dateTo}&hourFrom=${hourFrom}&hourTo=${hourTo}&page=${seCurrentPage}&size=20&sort=${seSort}${algoParam}${filterParam}`);
                 if (res.status === 401) { window.location.href = '/login'; return; }
                 if (!res.ok) throw new Error(res.status);
                 const data = await res.json();
