@@ -2278,6 +2278,7 @@
         }
 
         function evTypeClass(type) {
+            if (type === 'RESIDUAL_CREATED') return 'tl-type-chain';
             if (type === 'MANUAL_CLOSE_PLACED') return 'tl-type-manual';
             if (type === 'BLOCK_COMPLETED') return 'tl-type-block';
             if (type.startsWith('BUY')) return 'tl-type-buy';
@@ -2300,6 +2301,7 @@
         }
 
         function evDotClass(type) {
+            if (type === 'RESIDUAL_CREATED') return 'tl-dot-chain';
             if (type === 'MANUAL_CLOSE_PLACED') return 'tl-dot-manual';
             if (type === 'BLOCK_COMPLETED') return 'tl-dot-block';
             if (type.startsWith('BUY')) return 'tl-dot-buy';
