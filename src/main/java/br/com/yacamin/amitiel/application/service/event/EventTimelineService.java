@@ -518,7 +518,10 @@ public class EventTimelineService {
                 .map(this::getPayload)
                 .orElse(null);
 
-        // Calcular net shares do outcome vencedor a partir dos CLOB trades
+        // Calcular net shares do outcome vencedor
+        // IMPORTANTE: BUY fee e cobrada em shares — o CLOB BUY size e bruto (antes da fee).
+        // O ON_CHAIN amount e liquido (pos-fee) e reflete as shares reais on-chain.
+        // Usar ON_CHAIN amount como base quando disponivel.
         double winBuySize = 0, winSellSize = 0, winNetShares = 0;
         List<Map<String, Object>> winningTrades = new ArrayList<>();
         if (resolved && winningOutcome != null) {
@@ -540,13 +543,24 @@ public class EventTimelineService {
                     }
                 } catch (NumberFormatException ignored) {}
             }
-            winNetShares = round4(winBuySize - winSellSize);
+
+            // ON_CHAIN amount = shares liquidas (pos-fee) do outcome vencedor
+            String winOutcome = winningOutcome;
+            double onChainWinBuySize = ourOnChain.stream()
+                    .filter(oc -> winOutcome.equalsIgnoreCase((String) oc.get("outcome")))
+                    .mapToDouble(oc -> ((Number) oc.get("amount")).doubleValue())
+                    .sum();
+
+            // Preferir ON_CHAIN (liquido) sobre CLOB (bruto) para net shares
+            double effectiveWinBuySize = onChainWinBuySize > 0 ? onChainWinBuySize : winBuySize;
+            winNetShares = round4(effectiveWinBuySize - winSellSize);
             if (winNetShares > 0) {
                 expectedRedeemPayout = round4(winNetShares * 1.0);
             }
         }
 
         if (redeemConfirmedPayload != null) {
+            // Fonte primaria: REDEEM_CONFIRMED do Uriel (redeemValue real on-chain)
             redeemPayout = getNumber(redeemConfirmedPayload, "redeemValue");
             redeemCount = 1;
 
@@ -555,9 +569,20 @@ public class EventTimelineService {
                 dustAmount = round4(expectedRedeemPayout - redeemPayout);
                 hasDust = Math.abs(dustAmount) >= 0.0001;
             }
+        } else if (existingPnlEvent != null) {
+            // Fonte secundaria: PNL do Gabriel — ele sabe o status do entry (CLOSED vs RESOLVED)
+            // e calcula redeemPayout corretamente com base no ON_CHAIN size
+            Map<String, Object> gabrielPnl = getPayload(existingPnlEvent);
+            redeemPayout = getNumber(gabrielPnl, "redeemPayout");
+            if (redeemPayout > 0) redeemCount = 1;
         } else if (resolved && winningOutcome != null) {
-            // Fallback: estimar a partir dos CLOB trades
-            double netShares = clobTotalBuySize - clobTotalSellSize;
+            // Fallback: estimar a partir dos ON_CHAIN amounts (liquido, pos-fee)
+            // CLOB BUY size e bruto — nao reflete shares reais on-chain
+            double onChainTotal = ourOnChain.stream()
+                    .mapToDouble(oc -> ((Number) oc.get("amount")).doubleValue())
+                    .sum();
+            double effectiveBuySize = onChainTotal > 0 ? onChainTotal : clobTotalBuySize;
+            double netShares = effectiveBuySize - clobTotalSellSize;
             if (netShares > 0) {
                 String ourOutcome = confirmedWsTrades.stream()
                         .filter(ws -> "BUY".equals(ws.get("side")))
