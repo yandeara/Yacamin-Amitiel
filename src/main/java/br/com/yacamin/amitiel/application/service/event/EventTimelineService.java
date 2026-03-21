@@ -479,8 +479,10 @@ public class EventTimelineService {
                 double size = Double.parseDouble(ct.getSize());
                 double notional = price * size;
 
+                // Fee so nos SELLs — BUY fee e cobrada em shares (ja refletida no size menor),
+                // nao em USDC, entao nao deve ser subtraida do PnL
                 double fee = 0;
-                if (!"MAKER".equals(ct.getTraderSide())) {
+                if ("SELL".equals(ct.getSide()) && !"MAKER".equals(ct.getTraderSide())) {
                     fee = calculateCryptoFee(size, price);
                 }
                 clobTotalFees += fee;
