@@ -4,7 +4,7 @@ import br.com.yacamin.amitiel.adapter.out.persistence.EventRepository;
 import br.com.yacamin.amitiel.adapter.out.persistence.RealPnlEventRepository;
 import br.com.yacamin.amitiel.adapter.out.persistence.SimEventRepository;
 import br.com.yacamin.amitiel.adapter.out.persistence.SimPnlEventRepository;
-import br.com.yacamin.amitiel.application.service.algoritms.AlgoCalc;
+import br.com.yacamin.amitiel.application.service.AlgorithmQueryService;
 import br.com.yacamin.amitiel.application.service.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
@@ -36,6 +36,7 @@ public class SimPnlQueryService {
     private final RealPnlEventRepository realRepository;
     private final EventRepository eventRepository;
     private final SimEventRepository simEventRepository;
+    private final AlgorithmQueryService algorithmQueryService;
 
     public Map<String, Object> getPnlByPeriods(String mode, String algorithm) {
         return getPnlByPeriods(mode, algorithm, null);
@@ -326,8 +327,8 @@ public class SimPnlQueryService {
 
     public Map<String, Object> getComparisonPnl(String marketGroup) {
         Map<String, Object> comparison = new LinkedHashMap<>();
-        for (AlgoCalc algo : AlgoCalc.values()) {
-            comparison.put(algo.name(), getPnlByPeriods("sim", algo.name(), marketGroup));
+        for (String algoName : algorithmQueryService.listAllNames()) {
+            comparison.put(algoName, getPnlByPeriods("sim", algoName, marketGroup));
         }
         return comparison;
     }

@@ -1,11 +1,11 @@
 package br.com.yacamin.amitiel.adapter.in.controller;
 
-import br.com.yacamin.amitiel.application.service.algoritms.AlgoCalc;
 import br.com.yacamin.amitiel.application.service.algoritms.simulation.SimPnlQueryService;
 import br.com.yacamin.amitiel.application.service.event.EventTimelineService;
 import br.com.yacamin.amitiel.application.service.event.EventHeatmapService;
 import br.com.yacamin.amitiel.application.service.event.SimEventTimelineService;
 import br.com.yacamin.amitiel.application.service.MarketGroupQueryService;
+import br.com.yacamin.amitiel.application.service.AlgorithmQueryService;
 import br.com.yacamin.amitiel.application.service.verification.VerificationService;
 import br.com.yacamin.amitiel.application.service.wallet.WalletBalanceService;
 import br.com.yacamin.amitiel.application.service.wallet.AutoSnapshotScheduler;
@@ -41,10 +41,16 @@ public class DashboardController {
     private final AmitielConfigPersistenceService configPersistenceService;
     private final AutoSnapshotScheduler autoSnapshotScheduler;
     private final MarketGroupQueryService marketGroupQueryService;
+    private final AlgorithmQueryService algorithmQueryService;
 
     @GetMapping("/market-groups")
     public List<Map<String, Object>> getMarketGroups() {
         return marketGroupQueryService.listGroups();
+    }
+
+    @GetMapping("/algorithms")
+    public List<Map<String, Object>> getAlgorithms() {
+        return algorithmQueryService.listAll();
     }
 
     @GetMapping("/sim-pnl")

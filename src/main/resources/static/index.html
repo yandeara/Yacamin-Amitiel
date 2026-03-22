@@ -850,10 +850,7 @@
                         <button class="mode-btn" onclick="setPnlHistMode('sim')">SIM</button>
                         <button class="mode-btn active" onclick="setPnlHistMode('real')">REAL</button>
                     </div>
-                    <div class="mode-toggle" id="pnl-hist-algo-selector">
-                        <button class="mode-btn active" onclick="setPnlHistAlgo('ALPHA')">ALPHA</button>
-                        <button class="mode-btn" onclick="setPnlHistAlgo('GAMA')">GAMA</button>
-                    </div>
+                    <div class="mode-toggle" id="pnl-hist-algo-selector"></div>
                     <select id="mg-pnl" class="mg-selector heatmap-input" style="width:auto;min-width:100px;" onchange="fetchSimPnl()"></select>
                 </div>
             </div>
@@ -872,11 +869,7 @@
             <div class="page-header">
                 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
                     <span class="page-title">Heatmap (Eventos PNL)</span>
-                    <div class="mode-toggle" id="evhm-source-selector">
-                        <button class="mode-btn active" data-source="ALPHA" onclick="toggleEvhmSource('ALPHA', this)" style="border-left:3px solid var(--accent);">ALPHA</button>
-                        <button class="mode-btn" data-source="GAMA" onclick="toggleEvhmSource('GAMA', this)" style="border-left:3px solid var(--purple);">GAMA</button>
-                        <button class="mode-btn" data-source="REAL" onclick="toggleEvhmSource('REAL', this)" style="border-left:3px solid var(--green);">REAL</button>
-                    </div>
+                    <div class="mode-toggle" id="evhm-source-selector"></div>
                     <select id="mg-evhm" class="mg-selector heatmap-input" style="width:auto;min-width:100px;" onchange="fetchEvHeatmap()"></select>
                 </div>
                 <div class="heatmap-filters">
@@ -917,11 +910,7 @@
             <div class="page-header">
                 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
                     <span class="page-title">Heatmap</span>
-                    <div class="mode-toggle" id="heatmap-source-selector">
-                        <button class="mode-btn" data-source="ALPHA" onclick="toggleHeatmapSource('ALPHA', this)" style="border-left:3px solid var(--accent);">ALPHA</button>
-                        <button class="mode-btn" data-source="GAMA" onclick="toggleHeatmapSource('GAMA', this)" style="border-left:3px solid var(--purple);">GAMA</button>
-                        <button class="mode-btn active" data-source="REAL" onclick="toggleHeatmapSource('REAL', this)" style="border-left:3px solid var(--green);">REAL</button>
-                    </div>
+                    <div class="mode-toggle" id="heatmap-source-selector"></div>
                     <div class="mode-toggle" id="heatmap-metric-selector">
                         <button class="mode-btn active" onclick="toggleHeatmapMetric('pnl', this)">PnL</button>
                         <button class="mode-btn" onclick="toggleHeatmapMetric('flips', this)">Flips</button>
@@ -1039,11 +1028,7 @@
                         <button class="mode-btn" onclick="setSeRange('30d')">30 dias</button>
                         <button class="mode-btn" onclick="setSeRange('all')">Tudo</button>
                     </div>
-                    <div class="mode-toggle" id="se-algo-selector">
-                        <button class="mode-btn active" onclick="setSeAlgo('ALPHA')">ALPHA</button>
-                        <button class="mode-btn" onclick="setSeAlgo('GAMA')">GAMA</button>
-                        <button class="mode-btn" onclick="setSeAlgo('')">TODOS</button>
-                    </div>
+                    <div class="mode-toggle" id="se-algo-selector"></div>
                     <div class="mode-toggle" id="se-sort-selector">
                         <button class="mode-btn" onclick="setSeSort('asc')">Antigo</button>
                         <button class="mode-btn active" onclick="setSeSort('desc')">Recente</button>
@@ -1194,6 +1179,115 @@
         let pnlHistAlgo = 'ALPHA';
         let pnlHistMode = 'real';
         let marketGroups = [];
+        let algorithms = [];
+
+        /* ── Algorithm helpers ────────────────────────── */
+        const ALGO_COLOR_PALETTE = [
+            'var(--accent)', 'var(--purple)', '#f97316', '#06b6d4', '#ec4899', '#14b8a6', '#f59e0b', '#8b5cf6'
+        ];
+
+        function algoColor(name) {
+            if (name === 'REAL') return 'var(--green)';
+            const idx = algorithms.findIndex(a => a.name === name);
+            return idx >= 0 ? ALGO_COLOR_PALETTE[idx % ALGO_COLOR_PALETTE.length] : 'var(--accent)';
+        }
+
+        function algoShort(name) {
+            if (name === 'REAL') return 'R';
+            return name.substring(0, 1);
+        }
+
+        async function loadAlgorithms() {
+            try {
+                const res = await fetch('/api/dashboard/algorithms');
+                if (res.ok) algorithms = await res.json();
+            } catch(e) { console.error('Failed to load algorithms:', e); }
+            buildAlgoSelectors();
+        }
+
+        function buildAlgoSelectors() {
+            // PnL History algo selector
+            const pnlAlgoSel = document.getElementById('pnl-hist-algo-selector');
+            if (pnlAlgoSel) {
+                pnlAlgoSel.innerHTML = '';
+                algorithms.forEach((a, i) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'mode-btn' + (i === 0 ? ' active' : '');
+                    btn.textContent = a.name;
+                    btn.onclick = () => setPnlHistAlgo(a.name);
+                    pnlAlgoSel.appendChild(btn);
+                });
+                if (algorithms.length > 0) pnlHistAlgo = algorithms[0].name;
+            }
+
+            // Heatmap source selector
+            const heatmapSrcSel = document.getElementById('heatmap-source-selector');
+            if (heatmapSrcSel) {
+                heatmapSrcSel.innerHTML = '';
+                algorithms.forEach(a => {
+                    const btn = document.createElement('button');
+                    btn.className = 'mode-btn';
+                    btn.dataset.source = a.name;
+                    btn.style.borderLeft = '3px solid ' + algoColor(a.name);
+                    btn.textContent = a.name;
+                    btn.onclick = function() { toggleHeatmapSource(a.name, this); };
+                    heatmapSrcSel.appendChild(btn);
+                });
+                // REAL button
+                const realBtn = document.createElement('button');
+                realBtn.className = 'mode-btn active';
+                realBtn.dataset.source = 'REAL';
+                realBtn.style.borderLeft = '3px solid var(--green)';
+                realBtn.textContent = 'REAL';
+                realBtn.onclick = function() { toggleHeatmapSource('REAL', this); };
+                heatmapSrcSel.appendChild(realBtn);
+            }
+
+            // Event Heatmap source selector
+            const evhmSrcSel = document.getElementById('evhm-source-selector');
+            if (evhmSrcSel) {
+                evhmSrcSel.innerHTML = '';
+                algorithms.forEach((a, i) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'mode-btn' + (i === 0 ? ' active' : '');
+                    btn.dataset.source = a.name;
+                    btn.style.borderLeft = '3px solid ' + algoColor(a.name);
+                    btn.textContent = a.name;
+                    btn.onclick = function() { toggleEvhmSource(a.name, this); };
+                    evhmSrcSel.appendChild(btn);
+                });
+                const realBtn = document.createElement('button');
+                realBtn.className = 'mode-btn';
+                realBtn.dataset.source = 'REAL';
+                realBtn.style.borderLeft = '3px solid var(--green)';
+                realBtn.textContent = 'REAL';
+                realBtn.onclick = function() { toggleEvhmSource('REAL', this); };
+                evhmSrcSel.appendChild(realBtn);
+                // Update default active source
+                if (algorithms.length > 0) {
+                    evhmActiveSources = new Set([algorithms[0].name]);
+                }
+            }
+
+            // Sim Events algo selector
+            const seAlgoSel = document.getElementById('se-algo-selector');
+            if (seAlgoSel) {
+                seAlgoSel.innerHTML = '';
+                algorithms.forEach((a, i) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'mode-btn' + (i === 0 ? ' active' : '');
+                    btn.textContent = a.name;
+                    btn.onclick = () => setSeAlgo(a.name);
+                    seAlgoSel.appendChild(btn);
+                });
+                const todosBtn = document.createElement('button');
+                todosBtn.className = 'mode-btn';
+                todosBtn.textContent = 'TODOS';
+                todosBtn.onclick = () => setSeAlgo('');
+                seAlgoSel.appendChild(todosBtn);
+                if (algorithms.length > 0) seAlgo = algorithms[0].name;
+            }
+        }
 
         /* ── Market Group helpers ──────────────────────── */
         async function loadMarketGroups() {
@@ -1419,13 +1513,8 @@
         let heatmapFiltersInitialized = false;
         let heatmapMetrics = new Set(['pnl']);
 
-        const SOURCE_COLORS = {
-            'ALPHA': 'var(--accent)',
-            'GAMA': 'var(--purple)',
-            'REAL': 'var(--green)'
-        };
-
-        const SOURCE_SHORT = { 'ALPHA': 'A', 'GAMA': 'G', 'REAL': 'R' };
+        function getSourceColor(name) { return algoColor(name); }
+        function getSourceShort(name) { return algoShort(name); }
 
         function toggleHeatmapSource(source, btn) {
             if (heatmapActiveSources.has(source)) {
@@ -1579,7 +1668,7 @@
             let html = `<div class="heatmap-summary">`;
             for (const src of sources) {
                 const sd = heatmapSources[src];
-                const color = SOURCE_COLORS[src] || 'var(--text)';
+                const color = getSourceColor(src) || 'var(--text)';
                 if (showPnl && sd.pnl) {
                     const t = sd.pnl.totals;
                     html += `<div class="heatmap-summary-card" style="border-top:3px solid ${color};">
@@ -1629,7 +1718,7 @@
                         const pCell = pnlData[hs] ? pnlData[hs][ds] : null;
                         const fCell = flipData[hs] ? flipData[hs][ds] : null;
 
-                        const srcLabel = multiSource ? `<span style="color:${SOURCE_COLORS[src]};font-size:9px;font-weight:700;">${SOURCE_SHORT[src]}</span> ` : '';
+                        const srcLabel = multiSource ? `<span style="color:${getSourceColor(src)};font-size:9px;font-weight:700;">${getSourceShort(src)}</span> ` : '';
                         const srcParts = [];
 
                         if (showPnl && pCell) {
@@ -1657,7 +1746,7 @@
                 // Hour total
                 let hourTotalParts = [];
                 for (const src of sources) {
-                    const srcLabel = multiSource ? `<span style="color:${SOURCE_COLORS[src]};font-size:9px;font-weight:700;">${SOURCE_SHORT[src]}</span> ` : '';
+                    const srcLabel = multiSource ? `<span style="color:${getSourceColor(src)};font-size:9px;font-weight:700;">${getSourceShort(src)}</span> ` : '';
                     const srcParts = [];
                     const sd = heatmapSources[src];
 
@@ -1681,7 +1770,7 @@
                 for (const src of sources) {
                     const sd = heatmapSources[src];
                     const pnlData = sd.pnl ? sd.pnl.data : {};
-                    const srcLabel = multiSource ? `<span style="color:${SOURCE_COLORS[src]};font-size:9px;font-weight:700;">${SOURCE_SHORT[src]}</span> ` : '';
+                    const srcLabel = multiSource ? `<span style="color:${getSourceColor(src)};font-size:9px;font-weight:700;">${getSourceShort(src)}</span> ` : '';
                     const srcParts = [];
 
                     if (showPnl) {
@@ -1700,7 +1789,7 @@
             let grandParts = [];
             for (const src of sources) {
                 const sd = heatmapSources[src];
-                const srcLabel = multiSource ? `<span style="color:${SOURCE_COLORS[src]};font-size:9px;font-weight:700;">${SOURCE_SHORT[src]}</span> ` : '';
+                const srcLabel = multiSource ? `<span style="color:${getSourceColor(src)};font-size:9px;font-weight:700;">${getSourceShort(src)}</span> ` : '';
                 const srcParts = [];
 
                 if (showPnl && sd.pnl) srcParts.push(`<span class="${pnlCellClass(sd.pnl.totals.total)}">${Number(sd.pnl.totals.total).toFixed(4)}</span>`);
@@ -1747,7 +1836,7 @@
             html += '<thead><tr style="border-bottom:2px solid var(--border);">';
             html += '<th style="padding:8px 12px;text-align:left;color:var(--text-dim);">Periodo</th>';
             algos.forEach(algo => {
-                html += `<th colspan="3" style="padding:8px 12px;text-align:center;color:var(--accent);border-left:1px solid var(--border);">${algo}</th>`;
+                html += `<th colspan="3" style="padding:8px 12px;text-align:center;color:${algoColor(algo)};border-left:1px solid var(--border);">${algo}</th>`;
             });
             html += '</tr><tr style="border-bottom:1px solid var(--border);">';
             html += '<th></th>';
@@ -3622,7 +3711,7 @@
             let html = '<div class="heatmap-summary">';
             for (const src of sources) {
                 const sd = evhmSources[src];
-                const color = SOURCE_COLORS[src] || 'var(--text)';
+                const color = getSourceColor(src) || 'var(--text)';
                 const t = sd.totals;
                 html += `<div class="heatmap-summary-card" style="border-top:3px solid ${color};">
                     <div class="heatmap-summary-label">${src} PnL (${monthLabel})</div>
@@ -3657,7 +3746,7 @@
                         const row = sd.grid[h];
                         const cell = row.days[d - 1];
                         if (cell && cell.trades > 0) {
-                            const prefix = multiSource ? `<span style="font-size:8px;color:var(--text-dim);">${SOURCE_SHORT[src]}</span> ` : '';
+                            const prefix = multiSource ? `<span style="font-size:8px;color:var(--text-dim);">${getSourceShort(src)}</span> ` : '';
                             srcParts.push(`${prefix}<span class="${pnlCellClass(cell.pnl)}">${cell.pnl >= 0 ? '+' : ''}${cell.pnl.toFixed(4)}</span>`);
                         }
                     }
@@ -3675,7 +3764,7 @@
                         if (cell) hSum += cell.pnl;
                     }
                     if (Math.abs(hSum) > 0.00005) {
-                        const prefix = multiSource ? `<span style="font-size:8px;color:var(--text-dim);">${SOURCE_SHORT[src]}</span> ` : '';
+                        const prefix = multiSource ? `<span style="font-size:8px;color:var(--text-dim);">${getSourceShort(src)}</span> ` : '';
                         hParts.push(`${prefix}<span class="${pnlCellClass(hSum)}">${hSum >= 0 ? '+' : ''}${hSum.toFixed(4)}</span>`);
                     }
                 }
@@ -3690,7 +3779,7 @@
                     const sd = evhmSources[src];
                     const dt = sd.dayTotals[d - 1];
                     if (dt && dt.trades > 0) {
-                        const prefix = multiSource ? `<span style="font-size:8px;color:var(--text-dim);">${SOURCE_SHORT[src]}</span> ` : '';
+                        const prefix = multiSource ? `<span style="font-size:8px;color:var(--text-dim);">${getSourceShort(src)}</span> ` : '';
                         dParts.push(`${prefix}<span class="${pnlCellClass(dt.pnl)}">${dt.pnl >= 0 ? '+' : ''}${dt.pnl.toFixed(4)}</span>`);
                     }
                 }
@@ -3709,7 +3798,7 @@
                         if (cell) gSum += cell.pnl;
                     }
                 }
-                const prefix = multiSource ? `<span style="font-size:8px;color:var(--text-dim);">${SOURCE_SHORT[src]}</span> ` : '';
+                const prefix = multiSource ? `<span style="font-size:8px;color:var(--text-dim);">${getSourceShort(src)}</span> ` : '';
                 gParts.push(`${prefix}<span class="${pnlCellClass(gSum)}">${gSum >= 0 ? '+' : ''}${gSum.toFixed(4)}</span>`);
             }
             html += `<td class="heatmap-total-col">${gParts.join('<br>')}</td></tr>`;
@@ -4630,7 +4719,7 @@
         }
 
         /* ── Init ────────────────────────────────────── */
-        loadMarketGroups().then(() => fetchSimPnl());
+        Promise.all([loadMarketGroups(), loadAlgorithms()]).then(() => fetchSimPnl());
 
         // Auto-refresh PnL every 30 seconds when on PnL page
         setInterval(() => {
