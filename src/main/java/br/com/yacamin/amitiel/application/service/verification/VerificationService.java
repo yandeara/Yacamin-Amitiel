@@ -2,6 +2,7 @@ package br.com.yacamin.amitiel.application.service.verification;
 
 import br.com.yacamin.amitiel.adapter.out.persistence.RealPnlEventRepository;
 import br.com.yacamin.amitiel.adapter.out.rest.polymarket.PolymarketClobClient;
+import br.com.yacamin.amitiel.application.service.util.SlugUtils;
 import br.com.yacamin.amitiel.adapter.out.rest.polymarket.PolymarketClobClient.ClobTrade;
 import br.com.yacamin.amitiel.adapter.out.rest.polymarket.PolymarketGammaClient;
 import br.com.yacamin.amitiel.adapter.out.rest.polymarket.PolymarketGammaClient.GammaMarketResponse;
@@ -31,10 +32,16 @@ public class VerificationService {
      * Lista markets reais agrupados por marketUnixTime, com paginacao.
      */
     public Map<String, Object> listMarkets(long fromMs, long toMs, int page, int size) {
+        return listMarkets(fromMs, toMs, page, size, null);
+    }
+
+    public Map<String, Object> listMarkets(long fromMs, long toMs, int page, int size, String marketGroup) {
         List<RealPnlEvent> events = realRepository.findByTimestampBetweenOrderByTimestampDesc(fromMs, toMs);
 
         Map<Long, List<RealPnlEvent>> grouped = new LinkedHashMap<>();
         for (RealPnlEvent e : events) {
+            if (marketGroup != null && !marketGroup.isBlank()
+                    && !SlugUtils.extractMarketGroup(e.getSlug()).equals(marketGroup)) continue;
             grouped.computeIfAbsent(e.getMarketUnixTime(), k -> new ArrayList<>()).add(e);
         }
 

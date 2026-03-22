@@ -5,6 +5,7 @@ import br.com.yacamin.amitiel.adapter.out.persistence.RealPnlEventRepository;
 import br.com.yacamin.amitiel.adapter.out.persistence.SimEventRepository;
 import br.com.yacamin.amitiel.adapter.out.persistence.SimPnlEventRepository;
 import br.com.yacamin.amitiel.application.service.algoritms.AlgoCalc;
+import br.com.yacamin.amitiel.application.service.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,10 @@ public class SimPnlQueryService {
     private final SimEventRepository simEventRepository;
 
     public Map<String, Object> getPnlByPeriods(String mode, String algorithm) {
+        return getPnlByPeriods(mode, algorithm, null);
+    }
+
+    public Map<String, Object> getPnlByPeriods(String mode, String algorithm, String marketGroup) {
         long now = System.currentTimeMillis();
         long oldest = now - PERIODS.get("24h");
 
@@ -45,14 +50,17 @@ public class SimPnlQueryService {
         List<long[]> pnlRecords;
         if ("real".equals(mode)) {
             pnlRecords = eventRepository.findByTypeAndTimestampGreaterThanEqual("PNL", oldest).stream()
+                    .filter(e -> matchesMarketGroup(e.getSlug(), marketGroup))
                     .map(e -> new long[]{e.getTimestamp(), Double.doubleToLongBits(getPayloadNumber(e.getPayload(), "pnlReal"))})
                     .toList();
         } else if (algorithm != null && !algorithm.isBlank()) {
             pnlRecords = simEventRepository.findByTypeAndAlgorithmAndTimestampGreaterThanEqual("PNL", algorithm, oldest).stream()
+                    .filter(e -> matchesMarketGroup(e.getSlug(), marketGroup))
                     .map(e -> new long[]{e.getTimestamp(), Double.doubleToLongBits(getPayloadNumber(e.getPayload(), "pnlReal"))})
                     .toList();
         } else {
             pnlRecords = simEventRepository.findByTypeAndTimestampGreaterThanEqual("PNL", oldest).stream()
+                    .filter(e -> matchesMarketGroup(e.getSlug(), marketGroup))
                     .map(e -> new long[]{e.getTimestamp(), Double.doubleToLongBits(getPayloadNumber(e.getPayload(), "pnlReal"))})
                     .toList();
         }
@@ -107,6 +115,11 @@ public class SimPnlQueryService {
 
     @Async("pnlQueryExecutor")
     public CompletableFuture<Map<String, Object>> getPnlHeatmap(int year, int month, String mode, String algorithm) {
+        return getPnlHeatmap(year, month, mode, algorithm, null);
+    }
+
+    @Async("pnlQueryExecutor")
+    public CompletableFuture<Map<String, Object>> getPnlHeatmap(int year, int month, String mode, String algorithm, String marketGroup) {
         ZoneId zone = ZoneId.of("America/Sao_Paulo");
 
         LocalDate firstDay = LocalDate.of(year, month, 1);
@@ -118,12 +131,15 @@ public class SimPnlQueryService {
         List<long[]> events;
         if ("real".equals(mode)) {
             events = realRepository.findByTimestampBetween(fromMs, toMs).stream()
+                    .filter(e -> matchesMarketGroup(e.getSlug(), marketGroup))
                     .map(e -> new long[]{e.getTimestamp(), Double.doubleToLongBits(e.getPnl())}).toList();
         } else if (algorithm != null && !algorithm.isBlank()) {
             events = simRepository.findByAlgorithmAndTimestampBetween(algorithm, fromMs, toMs).stream()
+                    .filter(e -> matchesMarketGroup(e.getSlug(), marketGroup))
                     .map(e -> new long[]{e.getTimestamp(), Double.doubleToLongBits(e.getPnl())}).toList();
         } else {
             events = simRepository.findByTimestampBetween(fromMs, toMs).stream()
+                    .filter(e -> matchesMarketGroup(e.getSlug(), marketGroup))
                     .map(e -> new long[]{e.getTimestamp(), Double.doubleToLongBits(e.getPnl())}).toList();
         }
 
@@ -218,6 +234,11 @@ public class SimPnlQueryService {
 
     @Async("pnlQueryExecutor")
     public CompletableFuture<Map<String, Object>> getFlipsHeatmap(int year, int month, String mode, String algorithm) {
+        return getFlipsHeatmap(year, month, mode, algorithm, null);
+    }
+
+    @Async("pnlQueryExecutor")
+    public CompletableFuture<Map<String, Object>> getFlipsHeatmap(int year, int month, String mode, String algorithm, String marketGroup) {
         ZoneId zone = ZoneId.of("America/Sao_Paulo");
 
         LocalDate firstDay = LocalDate.of(year, month, 1);
@@ -232,6 +253,7 @@ public class SimPnlQueryService {
 
         if ("real".equals(mode)) {
             for (var e : realRepository.findByTimestampBetween(fromMs, toMs)) {
+                if (!matchesMarketGroup(e.getSlug(), marketGroup)) continue;
                 ZonedDateTime zdt = Instant.ofEpochMilli(e.getTimestamp()).atZone(zone);
                 int h = zdt.getHour(), d = zdt.getDayOfMonth() - 1;
                 maxFlipsGrid[h][d] = Math.max(maxFlipsGrid[h][d], e.getTotalFlips());
@@ -242,6 +264,7 @@ public class SimPnlQueryService {
                     ? simRepository.findByAlgorithmAndTimestampBetween(algorithm, fromMs, toMs)
                     : simRepository.findByTimestampBetween(fromMs, toMs);
             for (var e : events) {
+                if (!matchesMarketGroup(e.getSlug(), marketGroup)) continue;
                 ZonedDateTime zdt = Instant.ofEpochMilli(e.getTimestamp()).atZone(zone);
                 int h = zdt.getHour(), d = zdt.getDayOfMonth() - 1;
                 maxFlipsGrid[h][d] = Math.max(maxFlipsGrid[h][d], e.getTotalFlips());
@@ -298,9 +321,13 @@ public class SimPnlQueryService {
 
     /** Retorna PnL por periodo para todos os algoritmos (pagina de comparacao) */
     public Map<String, Object> getComparisonPnl() {
+        return getComparisonPnl(null);
+    }
+
+    public Map<String, Object> getComparisonPnl(String marketGroup) {
         Map<String, Object> comparison = new LinkedHashMap<>();
         for (AlgoCalc algo : AlgoCalc.values()) {
-            comparison.put(algo.name(), getPnlByPeriods("sim", algo.name()));
+            comparison.put(algo.name(), getPnlByPeriods("sim", algo.name(), marketGroup));
         }
         return comparison;
     }
@@ -316,6 +343,11 @@ public class SimPnlQueryService {
             }
         }
         return 0;
+    }
+
+    private boolean matchesMarketGroup(String slug, String marketGroup) {
+        if (marketGroup == null || marketGroup.isBlank()) return true;
+        return SlugUtils.extractMarketGroup(slug).equals(marketGroup);
     }
 
     private double round4(double v) {

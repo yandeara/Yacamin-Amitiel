@@ -854,6 +854,7 @@
                         <button class="mode-btn active" onclick="setPnlHistAlgo('ALPHA')">ALPHA</button>
                         <button class="mode-btn" onclick="setPnlHistAlgo('GAMA')">GAMA</button>
                     </div>
+                    <select id="mg-pnl" class="mg-selector heatmap-input" style="width:auto;min-width:100px;" onchange="fetchSimPnl()"></select>
                 </div>
             </div>
             <div class="page-body" style="padding:20px 24px;">
@@ -876,6 +877,7 @@
                         <button class="mode-btn" data-source="GAMA" onclick="toggleEvhmSource('GAMA', this)" style="border-left:3px solid var(--purple);">GAMA</button>
                         <button class="mode-btn" data-source="REAL" onclick="toggleEvhmSource('REAL', this)" style="border-left:3px solid var(--green);">REAL</button>
                     </div>
+                    <select id="mg-evhm" class="mg-selector heatmap-input" style="width:auto;min-width:100px;" onchange="fetchEvHeatmap()"></select>
                 </div>
                 <div class="heatmap-filters">
                     <div class="heatmap-filter-group">
@@ -924,6 +926,7 @@
                         <button class="mode-btn active" onclick="toggleHeatmapMetric('pnl', this)">PnL</button>
                         <button class="mode-btn" onclick="toggleHeatmapMetric('flips', this)">Flips</button>
                     </div>
+                    <select id="mg-heatmap" class="mg-selector heatmap-input" style="width:auto;min-width:100px;" onchange="fetchHeatmap()"></select>
                 </div>
                 <div class="heatmap-filters">
                     <div class="heatmap-filter-group">
@@ -963,6 +966,7 @@
             <div class="page-header">
                 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
                     <span class="page-title">Comparar Algoritmos</span>
+                    <select id="mg-algo-compare" class="mg-selector heatmap-input" style="width:auto;min-width:100px;" onchange="fetchAlgoComparison()"></select>
                 </div>
             </div>
             <div class="page-body" style="padding:20px 24px;">
@@ -993,6 +997,7 @@
                         <span style="color:var(--text-dim);">a</span>
                         <select id="vf-hour-to"></select>
                     </div>
+                    <select id="mg-vf" class="mg-selector heatmap-input" style="width:auto;min-width:100px;"></select>
                     <button class="heatmap-btn" onclick="fetchVerificationMarkets()">Buscar</button>
                 </div>
             </div>
@@ -1047,6 +1052,7 @@
                         <button class="mode-btn" onclick="setSeFilter('')">Todos</button>
                         <button class="mode-btn active" onclick="setSeFilter('active_only')">Com Atividade</button>
                     </div>
+                    <select id="mg-se" class="mg-selector heatmap-input" style="width:auto;min-width:100px;"></select>
                     <button class="heatmap-btn" onclick="fetchSimEventMarkets()">Buscar</button>
                 </div>
             </div>
@@ -1166,6 +1172,7 @@
                         <button class="mode-btn active" onclick="setEvFilter('active_only')">Com Atividade</button>
                         <button class="mode-btn" onclick="setEvFilter('pending_reconciliation')">Pendente Concilia&#231;&#227;o</button>
                     </div>
+                    <select id="mg-ev" class="mg-selector heatmap-input" style="width:auto;min-width:100px;"></select>
                     <button class="heatmap-btn" onclick="fetchEventMarkets()">Buscar</button>
                 </div>
             </div>
@@ -1186,6 +1193,48 @@
         let currentPage = 'sim-pnl';
         let pnlHistAlgo = 'ALPHA';
         let pnlHistMode = 'real';
+        let marketGroups = [];
+
+        /* ── Market Group helpers ──────────────────────── */
+        async function loadMarketGroups() {
+            try {
+                const res = await fetch('/api/dashboard/market-groups');
+                if (res.ok) marketGroups = await res.json();
+            } catch(e) { console.error('Failed to load market groups:', e); }
+            document.querySelectorAll('.mg-selector').forEach(populateMgSelector);
+        }
+
+        function populateMgSelector(select) {
+            select.innerHTML = '<option value="">Geral</option>';
+            for (const g of marketGroups) {
+                const opt = document.createElement('option');
+                opt.value = g.slugPrefix;
+                opt.textContent = g.displayName || g.slugPrefix;
+                select.appendChild(opt);
+            }
+        }
+
+        function getSelectedMg(selectId) {
+            const el = document.getElementById(selectId);
+            return el ? el.value : '';
+        }
+
+        function mgParam(selectId) {
+            const v = getSelectedMg(selectId);
+            return v ? '&marketGroup=' + encodeURIComponent(v) : '';
+        }
+
+        function slugDisplayName(slug) {
+            if (!slug) return '';
+            // extract prefix: "btc-updown-5m-1711000200" → "btc-updown-5m-"
+            const lastDash = slug.lastIndexOf('-');
+            if (lastDash < 0) return slug;
+            const prefix = slug.substring(0, lastDash + 1);
+            const match = marketGroups.find(g => g.slugPrefix === prefix);
+            if (match) return match.displayName || match.slugPrefix;
+            // fallback: remove trailing dash and uppercase
+            return prefix.slice(0, -1).toUpperCase();
+        }
         /* ── DOM refs ─────────────────────────────────── */
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');
@@ -1307,6 +1356,7 @@
             try {
                 let url = '/api/dashboard/sim-pnl?mode=' + pnlHistMode;
                 if (pnlHistMode === 'sim') url += '&algorithm=' + pnlHistAlgo;
+                url += mgParam('mg-pnl');
                 const res = await fetch(url);
                 if (res.status === 401) { window.location.href = '/login'; return; }
                 if (!res.ok) throw new Error(res.status);
@@ -1459,7 +1509,7 @@
                 for (const src of heatmapActiveSources) {
                     const mode = src === 'REAL' ? 'real' : 'sim';
                     const algoParam = src !== 'REAL' ? '&algorithm=' + src : '';
-                    fetches.push(fetch(`/api/dashboard/heatmap?year=${year}&month=${month}&mode=${mode}${algoParam}`));
+                    fetches.push(fetch(`/api/dashboard/heatmap?year=${year}&month=${month}&mode=${mode}${algoParam}${mgParam('mg-heatmap')}`));
                     sourceKeys.push(src);
                 }
 
@@ -1675,7 +1725,8 @@
             const container = document.getElementById('algo-compare-container');
             container.innerHTML = '<div class="empty-state"><h2>Carregando...</h2></div>';
             try {
-                const res = await fetch('/api/dashboard/sim-comparison');
+                let acUrl = '/api/dashboard/sim-comparison?_=1' + mgParam('mg-algo-compare');
+                const res = await fetch(acUrl);
                 if (res.status === 401) { window.location.href = '/login'; return; }
                 if (!res.ok) throw new Error(res.status);
                 const data = await res.json();
@@ -1784,7 +1835,7 @@
             const hourTo = document.getElementById('vf-hour-to').value;
 
             try {
-                const res = await fetch(`/api/dashboard/verification/markets?date=${date}&hourFrom=${hourFrom}&hourTo=${hourTo}&page=${vfCurrentPage}&size=20`);
+                const res = await fetch(`/api/dashboard/verification/markets?date=${date}&hourFrom=${hourFrom}&hourTo=${hourTo}&page=${vfCurrentPage}&size=20${mgParam('mg-vf')}`);
                 if (res.status === 401) { window.location.href = '/login'; return; }
                 if (!res.ok) throw new Error(res.status);
                 const data = await res.json();
@@ -1825,7 +1876,7 @@
                 html += `<div class="eh-market-card" style="cursor:pointer;" onclick="fetchVerificationDetail(${m.marketUnixTime})">
                     <div class="eh-market-header">
                         <div>
-                            <div class="eh-market-title">BTC 5m #${m.marketUnixTime}</div>
+                            <div class="eh-market-title">${slugDisplayName(m.slug)} #${m.marketUnixTime}</div>
                             <div style="font-size:11px;color:var(--text-dim);">${m.dateSP} ${m.timeSP}</div>
                         </div>
                         <div class="eh-market-meta">
@@ -2224,6 +2275,7 @@
             try {
                 let evUrl = `/api/dashboard/events/markets?dateFrom=${dateFrom}&dateTo=${dateTo}&hourFrom=${hourFrom}&hourTo=${hourTo}&page=${evCurrentPage}&size=20&sort=${evSort}`;
                 if (evFilter) evUrl += `&filter=${evFilter}`;
+                evUrl += mgParam('mg-ev');
                 const res = await fetch(evUrl);
                 if (res.status === 401) { window.location.href = '/login'; return; }
                 if (!res.ok) throw new Error(res.status);
@@ -2266,7 +2318,7 @@
                 html += `<div class="eh-market-card" style="cursor:pointer;" onclick="fetchEventTimeline('${m.slug}')">
                     <div class="eh-market-header">
                         <div>
-                            <div class="eh-market-title">BTC 5m #${m.marketUnixTime}</div>
+                            <div class="eh-market-title">${slugDisplayName(m.slug)} #${m.marketUnixTime}</div>
                             <div style="font-size:11px;color:var(--text-dim);">${m.dateSP} ${m.timeSP}</div>
                         </div>
                         <div class="eh-market-meta">
@@ -3485,7 +3537,7 @@
                 for (const src of evhmActiveSources) {
                     const mode = src === 'REAL' ? 'real' : 'sim';
                     const algoParam = src !== 'REAL' ? '&algorithm=' + src : '';
-                    fetches.push(fetch(`/api/dashboard/event-heatmap?year=${year}&month=${month}&mode=${mode}${algoParam}`));
+                    fetches.push(fetch(`/api/dashboard/event-heatmap?year=${year}&month=${month}&mode=${mode}${algoParam}${mgParam('mg-evhm')}`));
                     sourceKeys.push(src);
                 }
 
@@ -3738,7 +3790,7 @@
             const filterParam = seFilter ? '&filter=' + seFilter : '';
 
             try {
-                const res = await fetch(`/api/dashboard/sim-events/markets?dateFrom=${dateFrom}&dateTo=${dateTo}&hourFrom=${hourFrom}&hourTo=${hourTo}&page=${seCurrentPage}&size=20&sort=${seSort}${algoParam}${filterParam}`);
+                const res = await fetch(`/api/dashboard/sim-events/markets?dateFrom=${dateFrom}&dateTo=${dateTo}&hourFrom=${hourFrom}&hourTo=${hourTo}&page=${seCurrentPage}&size=20&sort=${seSort}${algoParam}${filterParam}${mgParam('mg-se')}`);
                 if (res.status === 401) { window.location.href = '/login'; return; }
                 if (!res.ok) throw new Error(res.status);
                 const data = await res.json();
@@ -3781,7 +3833,7 @@
                 html += `<div class="eh-market-card" style="cursor:pointer;" onclick="fetchSimEventTimeline('${m.slug}', '${detailAlgo}')">
                     <div class="eh-market-header">
                         <div>
-                            <div class="eh-market-title">BTC 5m #${m.marketUnixTime}</div>
+                            <div class="eh-market-title">${slugDisplayName(m.slug)} #${m.marketUnixTime}</div>
                             <div style="font-size:11px;color:var(--text-dim);">${m.dateSP} ${m.timeSP}</div>
                         </div>
                         <div class="eh-market-meta">
@@ -4528,7 +4580,7 @@
         }
 
         /* ── Init ────────────────────────────────────── */
-        fetchSimPnl();
+        loadMarketGroups().then(() => fetchSimPnl());
 
         // Auto-refresh PnL every 30 seconds when on PnL page
         setInterval(() => {

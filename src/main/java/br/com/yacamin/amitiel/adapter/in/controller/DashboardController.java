@@ -5,6 +5,7 @@ import br.com.yacamin.amitiel.application.service.algoritms.simulation.SimPnlQue
 import br.com.yacamin.amitiel.application.service.event.EventTimelineService;
 import br.com.yacamin.amitiel.application.service.event.EventHeatmapService;
 import br.com.yacamin.amitiel.application.service.event.SimEventTimelineService;
+import br.com.yacamin.amitiel.application.service.MarketGroupQueryService;
 import br.com.yacamin.amitiel.application.service.verification.VerificationService;
 import br.com.yacamin.amitiel.application.service.wallet.WalletBalanceService;
 import br.com.yacamin.amitiel.application.service.wallet.AutoSnapshotScheduler;
@@ -39,12 +40,19 @@ public class DashboardController {
     private final AmitielConfigService configService;
     private final AmitielConfigPersistenceService configPersistenceService;
     private final AutoSnapshotScheduler autoSnapshotScheduler;
+    private final MarketGroupQueryService marketGroupQueryService;
+
+    @GetMapping("/market-groups")
+    public List<Map<String, Object>> getMarketGroups() {
+        return marketGroupQueryService.listGroups();
+    }
 
     @GetMapping("/sim-pnl")
     public Map<String, Object> getSimPnl(
             @RequestParam(defaultValue = "sim") String mode,
-            @RequestParam(required = false) String algorithm) {
-        return simPnlQueryService.getPnlByPeriods(mode, algorithm);
+            @RequestParam(required = false) String algorithm,
+            @RequestParam(required = false) String marketGroup) {
+        return simPnlQueryService.getPnlByPeriods(mode, algorithm, marketGroup);
     }
 
     @GetMapping("/sim-pnl/heatmap")
@@ -52,16 +60,18 @@ public class DashboardController {
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) Integer month,
             @RequestParam(defaultValue = "sim") String mode,
-            @RequestParam(required = false) String algorithm) {
+            @RequestParam(required = false) String algorithm,
+            @RequestParam(required = false) String marketGroup) {
         LocalDate now = LocalDate.now(SP_ZONE);
         int y = year != null ? year : now.getYear();
         int m = month != null ? month : now.getMonthValue();
-        return simPnlQueryService.getPnlHeatmap(y, m, mode, algorithm);
+        return simPnlQueryService.getPnlHeatmap(y, m, mode, algorithm, marketGroup);
     }
 
     @GetMapping("/sim-comparison")
-    public Map<String, Object> getSimComparison() {
-        return simPnlQueryService.getComparisonPnl();
+    public Map<String, Object> getSimComparison(
+            @RequestParam(required = false) String marketGroup) {
+        return simPnlQueryService.getComparisonPnl(marketGroup);
     }
 
     @GetMapping("/heatmap")
@@ -69,13 +79,14 @@ public class DashboardController {
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) Integer month,
             @RequestParam(defaultValue = "sim") String mode,
-            @RequestParam(required = false) String algorithm) {
+            @RequestParam(required = false) String algorithm,
+            @RequestParam(required = false) String marketGroup) {
         LocalDate now = LocalDate.now(SP_ZONE);
         int y = year != null ? year : now.getYear();
         int m = month != null ? month : now.getMonthValue();
 
-        CompletableFuture<Map<String, Object>> pnlFuture = simPnlQueryService.getPnlHeatmap(y, m, mode, algorithm);
-        CompletableFuture<Map<String, Object>> flipsFuture = simPnlQueryService.getFlipsHeatmap(y, m, mode, algorithm);
+        CompletableFuture<Map<String, Object>> pnlFuture = simPnlQueryService.getPnlHeatmap(y, m, mode, algorithm, marketGroup);
+        CompletableFuture<Map<String, Object>> flipsFuture = simPnlQueryService.getFlipsHeatmap(y, m, mode, algorithm, marketGroup);
 
         return CompletableFuture.allOf(pnlFuture, flipsFuture).thenApply(v -> {
             Map<String, Object> result = new LinkedHashMap<>();
@@ -94,13 +105,14 @@ public class DashboardController {
             @RequestParam(defaultValue = "0") int hourFrom,
             @RequestParam(defaultValue = "23") int hourTo,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String marketGroup) {
 
         LocalDate day = LocalDate.parse(date);
         long fromMs = day.atTime(LocalTime.of(hourFrom, 0)).atZone(SP_ZONE).toInstant().toEpochMilli();
         long toMs = day.atTime(LocalTime.of(hourTo, 59, 59)).atZone(SP_ZONE).toInstant().toEpochMilli();
 
-        return verificationService.listMarkets(fromMs, toMs, page, size);
+        return verificationService.listMarkets(fromMs, toMs, page, size, marketGroup);
     }
 
     @GetMapping("/verification/detail")
@@ -122,14 +134,15 @@ public class DashboardController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "desc") String sort,
-            @RequestParam(required = false) String filter) {
+            @RequestParam(required = false) String filter,
+            @RequestParam(required = false) String marketGroup) {
 
         LocalDate dayFrom = LocalDate.parse(dateFrom);
         LocalDate dayTo = LocalDate.parse(dateTo);
         long fromMs = dayFrom.atTime(LocalTime.of(hourFrom, 0)).atZone(SP_ZONE).toInstant().toEpochMilli();
         long toMs = dayTo.atTime(LocalTime.of(hourTo, 59, 59)).atZone(SP_ZONE).toInstant().toEpochMilli();
 
-        return eventTimelineService.listMarkets(fromMs, toMs, page, size, sort, filter);
+        return eventTimelineService.listMarkets(fromMs, toMs, page, size, sort, filter, marketGroup);
     }
 
     @GetMapping("/events/timeline")
@@ -174,14 +187,15 @@ public class DashboardController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "desc") String sort,
-            @RequestParam(required = false) String filter) {
+            @RequestParam(required = false) String filter,
+            @RequestParam(required = false) String marketGroup) {
 
         LocalDate dayFrom = LocalDate.parse(dateFrom);
         LocalDate dayTo = LocalDate.parse(dateTo);
         long fromMs = dayFrom.atTime(LocalTime.of(hourFrom, 0)).atZone(SP_ZONE).toInstant().toEpochMilli();
         long toMs = dayTo.atTime(LocalTime.of(hourTo, 59, 59)).atZone(SP_ZONE).toInstant().toEpochMilli();
 
-        return simEventTimelineService.listMarkets(fromMs, toMs, algorithm, page, size, sort, filter);
+        return simEventTimelineService.listMarkets(fromMs, toMs, algorithm, page, size, sort, filter, marketGroup);
     }
 
     @GetMapping("/sim-events/timeline")
@@ -198,11 +212,12 @@ public class DashboardController {
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) Integer month,
             @RequestParam(defaultValue = "sim") String mode,
-            @RequestParam(required = false) String algorithm) {
+            @RequestParam(required = false) String algorithm,
+            @RequestParam(required = false) String marketGroup) {
         LocalDate now = LocalDate.now(SP_ZONE);
         int y = year != null ? year : now.getYear();
         int m = month != null ? month : now.getMonthValue();
-        return eventHeatmapService.getHeatmap(y, m, mode, algorithm);
+        return eventHeatmapService.getHeatmap(y, m, mode, algorithm, marketGroup);
     }
 
     // ─── Wallet Balance ──────────────────────────────────────────

@@ -2,6 +2,7 @@ package br.com.yacamin.amitiel.application.service.event;
 
 import br.com.yacamin.amitiel.adapter.out.persistence.EventRepository;
 import br.com.yacamin.amitiel.adapter.out.persistence.SimEventRepository;
+import br.com.yacamin.amitiel.application.service.util.SlugUtils;
 import br.com.yacamin.amitiel.domain.Event;
 import br.com.yacamin.amitiel.domain.SimEvent;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,10 @@ public class EventHeatmapService {
      * @param algorithm para sim: "ALPHA", "GAMA" ou null (todos)
      */
     public Map<String, Object> getHeatmap(int year, int month, String mode, String algorithm) {
+        return getHeatmap(year, month, mode, algorithm, null);
+    }
+
+    public Map<String, Object> getHeatmap(int year, int month, String mode, String algorithm, String marketGroup) {
         LocalDate firstDay = LocalDate.of(year, month, 1);
         int daysInMonth = firstDay.lengthOfMonth();
 
@@ -47,6 +52,7 @@ public class EventHeatmapService {
             List<Event> events = eventRepository.findByTimestampBetweenOrderByTimestampDesc(fromMs, toMs);
             for (Event e : events) {
                 if (!"PNL".equals(e.getType())) continue;
+                if (!matchesMarketGroup(e.getSlug(), marketGroup)) continue;
                 Map<String, Object> payload = getPayload(e);
                 double pnlReal = getNumber(payload, "pnlReal");
                 double fees = getNumber(payload, "totalFees");
@@ -58,6 +64,7 @@ public class EventHeatmapService {
                     : simEventRepository.findByTimestampBetweenOrderByTimestampDesc(fromMs, toMs);
             for (SimEvent e : events) {
                 if (!"PNL".equals(e.getType())) continue;
+                if (!matchesMarketGroup(e.getSlug(), marketGroup)) continue;
                 Map<String, Object> payload = getSimPayload(e);
                 double pnlReal = getNumber(payload, "pnlReal");
                 double fees = getNumber(payload, "totalFees");
@@ -176,6 +183,11 @@ public class EventHeatmapService {
             catch (NumberFormatException e) { return 0; }
         }
         return 0;
+    }
+
+    private boolean matchesMarketGroup(String slug, String marketGroup) {
+        if (marketGroup == null || marketGroup.isBlank()) return true;
+        return SlugUtils.extractMarketGroup(slug).equals(marketGroup);
     }
 
     private double round4(double v) {

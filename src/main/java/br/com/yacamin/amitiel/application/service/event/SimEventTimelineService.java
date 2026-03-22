@@ -1,6 +1,7 @@
 package br.com.yacamin.amitiel.application.service.event;
 
 import br.com.yacamin.amitiel.adapter.out.persistence.SimEventRepository;
+import br.com.yacamin.amitiel.application.service.util.SlugUtils;
 import br.com.yacamin.amitiel.domain.SimEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,11 @@ public class SimEventTimelineService {
      */
     public Map<String, Object> listMarkets(long fromMs, long toMs, String algorithm,
                                             int page, int size, String sort, String filter) {
+        return listMarkets(fromMs, toMs, algorithm, page, size, sort, filter, null);
+    }
+
+    public Map<String, Object> listMarkets(long fromMs, long toMs, String algorithm,
+                                            int page, int size, String sort, String filter, String marketGroup) {
         List<SimEvent> events = (algorithm != null && !algorithm.isBlank())
                 ? simEventRepository.findByAlgorithmAndTimestampBetweenOrderByTimestampDesc(algorithm, fromMs, toMs)
                 : simEventRepository.findByTimestampBetweenOrderByTimestampDesc(fromMs, toMs);
@@ -33,6 +39,8 @@ public class SimEventTimelineService {
         // Agrupa por slug
         Map<String, List<SimEvent>> grouped = new LinkedHashMap<>();
         for (SimEvent e : events) {
+            if (marketGroup != null && !marketGroup.isBlank()
+                    && !SlugUtils.extractMarketGroup(e.getSlug()).equals(marketGroup)) continue;
             grouped.computeIfAbsent(e.getSlug(), k -> new ArrayList<>()).add(e);
         }
 
@@ -187,14 +195,7 @@ public class SimEventTimelineService {
     }
 
     private long extractUnixFromSlug(String slug) {
-        if (slug == null) return 0;
-        int lastDash = slug.lastIndexOf('-');
-        if (lastDash < 0) return 0;
-        try {
-            return Long.parseLong(slug.substring(lastDash + 1));
-        } catch (NumberFormatException e) {
-            return 0;
-        }
+        return SlugUtils.extractUnixFromSlug(slug);
     }
 
     private void addTimeFields(Map<String, Object> result, long marketUnixTime) {

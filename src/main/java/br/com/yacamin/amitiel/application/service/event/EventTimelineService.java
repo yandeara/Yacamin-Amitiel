@@ -2,6 +2,7 @@ package br.com.yacamin.amitiel.application.service.event;
 
 import br.com.yacamin.amitiel.adapter.out.persistence.EventRepository;
 import br.com.yacamin.amitiel.adapter.out.rest.polymarket.PolymarketClobClient;
+import br.com.yacamin.amitiel.application.service.util.SlugUtils;
 import br.com.yacamin.amitiel.adapter.out.rest.polymarket.PolymarketClobClient.ClobTrade;
 import br.com.yacamin.amitiel.adapter.out.rest.polymarket.PolymarketGammaClient;
 import br.com.yacamin.amitiel.adapter.out.rest.polymarket.PolymarketGammaClient.GammaMarketResponse;
@@ -32,10 +33,16 @@ public class EventTimelineService {
     // ─── List Markets ─────────────────────────────────────────────────
 
     public Map<String, Object> listMarkets(long fromMs, long toMs, int page, int size, String sort, String filter) {
+        return listMarkets(fromMs, toMs, page, size, sort, filter, null);
+    }
+
+    public Map<String, Object> listMarkets(long fromMs, long toMs, int page, int size, String sort, String filter, String marketGroup) {
         List<Event> events = eventRepository.findByTimestampBetweenOrderByTimestampDesc(fromMs, toMs);
 
         Map<String, List<Event>> grouped = new LinkedHashMap<>();
         for (Event e : events) {
+            if (marketGroup != null && !marketGroup.isBlank()
+                    && !SlugUtils.extractMarketGroup(e.getSlug()).equals(marketGroup)) continue;
             grouped.computeIfAbsent(e.getSlug(), k -> new ArrayList<>()).add(e);
         }
 
@@ -1117,14 +1124,7 @@ public class EventTimelineService {
     // ─── Slug / time helpers ──────────────────────────────────────────
 
     private long extractUnixFromSlug(String slug) {
-        if (slug == null) return 0;
-        int lastDash = slug.lastIndexOf('-');
-        if (lastDash < 0) return 0;
-        try {
-            return Long.parseLong(slug.substring(lastDash + 1));
-        } catch (NumberFormatException e) {
-            return 0;
-        }
+        return SlugUtils.extractUnixFromSlug(slug);
     }
 
     private void addTimeFields(Map<String, Object> result, long marketUnixTime) {
