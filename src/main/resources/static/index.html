@@ -2501,11 +2501,36 @@
                             valStyle = val > 0 ? 'color:var(--green)' : val < 0 ? 'color:var(--red)' : 'color:var(--text-dim)';
                             displayVal = val > 0 ? '+1 (UP)' : val < 0 ? '-1 (DOWN)' : '0 (NEUTRO)';
                         } else if (key === 'finalEfficiency' || key === 'lateEfficiency' || key === 'reversalMagnitude'
-                                || key === 'trendScoreFinal' || key === 'chopScoreFinal' || key === 'endBlockRiskFinal') {
+                                || key === 'trendScoreFinal' || key === 'chopScoreFinal' || key === 'endBlockRiskFinal'
+                                || key === 'blockEfficiency' || key === 'recentEfficiency10s' || key === 'exhaustionScore'
+                                || key === 'lateReversalRate' || key === 'manipulationRiskScore') {
                             displayVal = typeof val === 'number' ? (val * 100).toFixed(1) + '%' : val;
                             if (key === 'endBlockRiskFinal') valStyle = val >= 0.7 ? 'color:var(--red)' : val >= 0.4 ? 'color:var(--yellow)' : 'color:var(--green)';
                             else if (key === 'chopScoreFinal') valStyle = val >= 0.5 ? 'color:var(--red)' : 'color:var(--text)';
-                            else if (key === 'finalEfficiency' || key === 'lateEfficiency') valStyle = val >= 0.6 ? 'color:var(--green)' : val <= 0.3 ? 'color:var(--red)' : 'color:var(--text)';
+                            else if (key === 'finalEfficiency' || key === 'lateEfficiency' || key === 'blockEfficiency' || key === 'recentEfficiency10s') valStyle = val >= 0.6 ? 'color:var(--green)' : val <= 0.3 ? 'color:var(--red)' : 'color:var(--text)';
+                            else if (key === 'exhaustionScore') valStyle = val >= 0.4 ? 'color:var(--red)' : val >= 0.2 ? 'color:var(--yellow)' : 'color:var(--green)';
+                            else if (key === 'lateReversalRate' || key === 'manipulationRiskScore') valStyle = val >= 0.3 ? 'color:var(--red)' : val >= 0.15 ? 'color:var(--yellow)' : 'color:var(--green)';
+                        } else if (key === 'momentumDelta') {
+                            valStyle = val > 0 ? 'color:var(--green)' : val < 0 ? 'color:var(--red)' : 'color:var(--text-dim)';
+                            displayVal = (val >= 0 ? '+' : '') + (typeof val === 'number' ? val.toFixed(4) : val);
+                        } else if (key === 'trendDecayLabel') {
+                            if (val === 'ALIGNED') valStyle = 'color:var(--green)';
+                            else if (val === 'WEAKENING') valStyle = 'color:var(--yellow)';
+                            else if (val === 'DIVERGING') valStyle = 'color:var(--red)';
+                            else valStyle = 'color:var(--text-dim)';
+                        } else if (key === 'regimeLabel') {
+                            if (val === 'TREND_STRONG') valStyle = 'color:var(--green)';
+                            else if (val === 'TREND_MODERATE') valStyle = 'color:#4ade80';
+                            else if (val === 'NEUTRAL') valStyle = 'color:var(--text-dim)';
+                            else if (val === 'CHOP_MODERATE') valStyle = 'color:var(--yellow)';
+                            else if (val === 'CHOP_HARD') valStyle = 'color:var(--red)';
+                        } else if (key === 'endBlockRiskLabel') {
+                            if (val === 'LOW') valStyle = 'color:var(--green)';
+                            else if (val === 'MODERATE') valStyle = 'color:var(--yellow)';
+                            else if (val === 'HIGH') valStyle = 'color:var(--red)';
+                            else if (val === 'EXTREME') valStyle = 'color:#dc2626;font-weight:700';
+                        } else if (key === 'deltaFlips') {
+                            valStyle = val >= 3 ? 'color:var(--red)' : val >= 1 ? 'color:var(--yellow)' : 'color:var(--green)';
                         } else if (key === 'pSuccess' || key === 'requestedPrice' || key === 'entryPrice' || key === 'price') {
                             displayVal = typeof val === 'number' ? val.toFixed(4) : val;
                         } else if (key === 'latencyMs') {
@@ -3974,11 +3999,36 @@
                             valStyle = val > 0 ? 'color:var(--green)' : val < 0 ? 'color:var(--red)' : 'color:var(--text-dim)';
                             displayVal = val > 0 ? '+1 (UP)' : val < 0 ? '-1 (DOWN)' : '0 (NEUTRO)';
                         } else if (key === 'finalEfficiency' || key === 'lateEfficiency' || key === 'reversalMagnitude'
-                                || key === 'trendScoreFinal' || key === 'chopScoreFinal' || key === 'endBlockRiskFinal') {
+                                || key === 'trendScoreFinal' || key === 'chopScoreFinal' || key === 'endBlockRiskFinal'
+                                || key === 'blockEfficiency' || key === 'recentEfficiency10s' || key === 'exhaustionScore'
+                                || key === 'lateReversalRate' || key === 'manipulationRiskScore') {
                             displayVal = typeof val === 'number' ? (val * 100).toFixed(1) + '%' : val;
                             if (key === 'endBlockRiskFinal') valStyle = val >= 0.7 ? 'color:var(--red)' : val >= 0.4 ? 'color:var(--yellow)' : 'color:var(--green)';
                             else if (key === 'chopScoreFinal') valStyle = val >= 0.5 ? 'color:var(--red)' : 'color:var(--text)';
-                            else if (key === 'finalEfficiency' || key === 'lateEfficiency') valStyle = val >= 0.6 ? 'color:var(--green)' : val <= 0.3 ? 'color:var(--red)' : 'color:var(--text)';
+                            else if (key === 'finalEfficiency' || key === 'lateEfficiency' || key === 'blockEfficiency' || key === 'recentEfficiency10s') valStyle = val >= 0.6 ? 'color:var(--green)' : val <= 0.3 ? 'color:var(--red)' : 'color:var(--text)';
+                            else if (key === 'exhaustionScore') valStyle = val >= 0.4 ? 'color:var(--red)' : val >= 0.2 ? 'color:var(--yellow)' : 'color:var(--green)';
+                            else if (key === 'lateReversalRate' || key === 'manipulationRiskScore') valStyle = val >= 0.3 ? 'color:var(--red)' : val >= 0.15 ? 'color:var(--yellow)' : 'color:var(--green)';
+                        } else if (key === 'momentumDelta') {
+                            valStyle = val > 0 ? 'color:var(--green)' : val < 0 ? 'color:var(--red)' : 'color:var(--text-dim)';
+                            displayVal = (val >= 0 ? '+' : '') + (typeof val === 'number' ? val.toFixed(4) : val);
+                        } else if (key === 'trendDecayLabel') {
+                            if (val === 'ALIGNED') valStyle = 'color:var(--green)';
+                            else if (val === 'WEAKENING') valStyle = 'color:var(--yellow)';
+                            else if (val === 'DIVERGING') valStyle = 'color:var(--red)';
+                            else valStyle = 'color:var(--text-dim)';
+                        } else if (key === 'regimeLabel') {
+                            if (val === 'TREND_STRONG') valStyle = 'color:var(--green)';
+                            else if (val === 'TREND_MODERATE') valStyle = 'color:#4ade80';
+                            else if (val === 'NEUTRAL') valStyle = 'color:var(--text-dim)';
+                            else if (val === 'CHOP_MODERATE') valStyle = 'color:var(--yellow)';
+                            else if (val === 'CHOP_HARD') valStyle = 'color:var(--red)';
+                        } else if (key === 'endBlockRiskLabel') {
+                            if (val === 'LOW') valStyle = 'color:var(--green)';
+                            else if (val === 'MODERATE') valStyle = 'color:var(--yellow)';
+                            else if (val === 'HIGH') valStyle = 'color:var(--red)';
+                            else if (val === 'EXTREME') valStyle = 'color:#dc2626;font-weight:700';
+                        } else if (key === 'deltaFlips') {
+                            valStyle = val >= 3 ? 'color:var(--red)' : val >= 1 ? 'color:var(--yellow)' : 'color:var(--green)';
                         } else if (key === 'pSuccess' || key === 'requestedPrice' || key === 'entryPrice' || key === 'price' || key === 'fillPrice') {
                             displayVal = typeof val === 'number' ? val.toFixed(4) : val;
                         } else if (key === 'pnl' || key === 'pnlReal') {
