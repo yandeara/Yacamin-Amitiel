@@ -230,6 +230,8 @@
         .tl-dot-dust-redeem-fail { background: #ef4444; border-color: #ef4444; }
         .tl-dot-manual { background: var(--accent); border-color: var(--accent); }
         .tl-dot-block { background: #6366f1; border-color: #6366f1; }
+        .tl-dot-worker { background: #0ea5e9; border-color: #0ea5e9; }
+        .tl-dot-worker-timeout { background: #f59e0b; border-color: #f59e0b; }
 
         .tl-header {
             display: flex;
@@ -266,6 +268,8 @@
         .tl-type-dust-redeem-fail { background: rgba(239,68,68,0.15); color: #ef4444; }
         .tl-type-manual { background: rgba(168,85,247,0.15); color: var(--accent); }
         .tl-type-block { background: rgba(99,102,241,0.15); color: #6366f1; }
+        .tl-type-worker { background: rgba(14,165,233,0.15); color: #0ea5e9; }
+        .tl-type-worker-timeout { background: rgba(245,158,11,0.15); color: #f59e0b; }
 
         .tl-time {
             font-size: 10px;
@@ -2454,6 +2458,8 @@
             if (type === 'RESIDUAL_CREATED') return 'tl-type-chain';
             if (type === 'MANUAL_CLOSE_PLACED') return 'tl-type-manual';
             if (type === 'BLOCK_COMPLETED') return 'tl-type-block';
+            if (type === 'WORKER_CONFIRMED') return 'tl-type-worker';
+            if (type === 'WORKER_TIMEOUT') return 'tl-type-worker-timeout';
             if (type.startsWith('BUY')) return 'tl-type-buy';
             if (type.startsWith('SELL')) return 'tl-type-sell';
             if (type.startsWith('WS')) return 'tl-type-ws';
@@ -2477,6 +2483,8 @@
             if (type === 'RESIDUAL_CREATED') return 'tl-dot-chain';
             if (type === 'MANUAL_CLOSE_PLACED') return 'tl-dot-manual';
             if (type === 'BLOCK_COMPLETED') return 'tl-dot-block';
+            if (type === 'WORKER_CONFIRMED') return 'tl-dot-worker';
+            if (type === 'WORKER_TIMEOUT') return 'tl-dot-worker-timeout';
             if (type.startsWith('BUY')) return 'tl-dot-buy';
             if (type.startsWith('SELL')) return 'tl-dot-sell';
             if (type.startsWith('WS')) return 'tl-dot-ws';

@@ -31,7 +31,8 @@
       "Bash(sed 's/^\\\\.\"\"\"\"//')",
       "Bash(sed 's/\"\"\"\"$//')",
       "Bash(grep -v \"//\")",
-      "Bash(find D:/Projetos/Yacamin/Yacamin-Gabriel/src -name TradingConfig* -type f)"
+      "Bash(find D:/Projetos/Yacamin/Yacamin-Gabriel/src -name TradingConfig* -type f)",
+      "WebFetch(domain:)"
     ]
   }
 }

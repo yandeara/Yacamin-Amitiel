@@ -65,6 +65,8 @@ Amitiel connects to the same MongoDB as Gabriel/Miguel/Uriel.
 
 All events written by Amitiel use `source: "AMITIEL_RECONCILIATION"` or `source: "AMITIEL_DUST_RECOVERY"` in the payload to distinguish from Gabriel's events.
 
+**Worker confirmation events (Gabriel v0.6+):** Gabriel emits `WORKER_CONFIRMED` (order confirmed via CLOB/RPC polling worker) and `WORKER_TIMEOUT` (workers exhausted 120 polls without confirmation). These are informational — they don't affect FEES/PNL calculations but indicate that WS_TRADE CONFIRMED may not exist for a given order. Amitiel's reconciliation treats `WORKER_CONFIRMED` as valid confirmation (not orphan).
+
 **Cross-module modification:** Amitiel can modify Uriel's `REDEEM_CONFIRMED` events (adding `correctedByAmitiel: true`) when dust false positive is detected.
 
 ### REST API Endpoints

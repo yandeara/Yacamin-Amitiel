@@ -243,6 +243,20 @@ public class EventTimelineService {
         ourSummary.put("resolved", resolved);
         ourSummary.put("winningOutcome", winningOutcome);
 
+        // Worker confirmation status
+        boolean hasWorkerConfirmed = events.stream().anyMatch(e -> "WORKER_CONFIRMED".equals(e.getType()));
+        boolean hasWorkerTimeout = events.stream().anyMatch(e -> "WORKER_TIMEOUT".equals(e.getType()));
+        ourSummary.put("hasWorkerConfirmed", hasWorkerConfirmed);
+        ourSummary.put("hasWorkerTimeout", hasWorkerTimeout);
+        if (hasWorkerConfirmed || hasWorkerTimeout) {
+            // Contar quantos sells tem PnL provisorio (WORKER_CONFIRMED sem WS_TRADE CONFIRMED posterior)
+            long workerConfirmedSells = events.stream()
+                    .filter(e -> "WORKER_CONFIRMED".equals(e.getType()))
+                    .filter(e -> "SELL".equals(getString(getPayload(e), "side")))
+                    .count();
+            ourSummary.put("workerConfirmedSells", workerConfirmedSells);
+        }
+
         // Redeem status from Uriel events
         boolean hasAwaitingRedeem = events.stream().anyMatch(e -> "AWAITING_REDEEM".equals(e.getType()));
         boolean hasRedeemConfirmed = events.stream().anyMatch(e -> "REDEEM_CONFIRMED".equals(e.getType()));
@@ -417,17 +431,31 @@ public class EventTimelineService {
             reconciliation.add(rec);
         }
 
-        // Verificar BUY/SELL_ORDER_RESPONSE com success=true mas sem WS_TRADE CONFIRMED correspondente
+        // Coletar WORKER_CONFIRMED events — ordens confirmadas via worker (CLOB poll ou RPC poll)
+        // Se existe WORKER_CONFIRMED para uma ordem, nao e orphan — o trade executou,
+        // a confirmacao apenas veio via worker em vez de WS_TRADE CONFIRMED
+        Set<String> workerConfirmedOrderIds = new HashSet<>();
+        for (Event e : events) {
+            if ("WORKER_CONFIRMED".equals(e.getType())) {
+                Map<String, Object> payload = getPayload(e);
+                String wOrderId = getString(payload, "orderId");
+                if (wOrderId != null) workerConfirmedOrderIds.add(wOrderId);
+            }
+        }
+
+        // Verificar BUY/SELL_ORDER_RESPONSE com success=true mas sem WS_TRADE CONFIRMED
+        // nem WORKER_CONFIRMED correspondente
         List<Map<String, Object>> orphanOrders = new ArrayList<>();
         for (Map<String, Object> buy : ourBuyResponses) {
             if (Boolean.TRUE.equals(buy.get("success"))) {
                 String orderId = (String) buy.get("orderId");
                 boolean hasWsConfirm = confirmedWsTrades.stream()
                         .anyMatch(ws -> orderId != null && orderId.equals(ws.get("takerOrderId")));
-                if (!hasWsConfirm) {
+                boolean hasWorkerConfirm = orderId != null && workerConfirmedOrderIds.contains(orderId);
+                if (!hasWsConfirm && !hasWorkerConfirm) {
                     Map<String, Object> orphan = new LinkedHashMap<>(buy);
                     orphan.put("orderType", "BUY");
-                    orphan.put("issue", "BUY matched no CLOB (orderId=" + orderId + ") mas sem WS_TRADE CONFIRMED correspondente");
+                    orphan.put("issue", "BUY matched no CLOB (orderId=" + orderId + ") mas sem WS_TRADE CONFIRMED nem WORKER_CONFIRMED");
                     orphanOrders.add(orphan);
                 }
             }
@@ -437,10 +465,11 @@ public class EventTimelineService {
                 String orderId = (String) sell.get("orderId");
                 boolean hasWsConfirm = confirmedWsTrades.stream()
                         .anyMatch(ws -> orderId != null && orderId.equals(ws.get("takerOrderId")));
-                if (!hasWsConfirm) {
+                boolean hasWorkerConfirm = orderId != null && workerConfirmedOrderIds.contains(orderId);
+                if (!hasWsConfirm && !hasWorkerConfirm) {
                     Map<String, Object> orphan = new LinkedHashMap<>(sell);
                     orphan.put("orderType", "SELL");
-                    orphan.put("issue", "SELL matched no CLOB (orderId=" + orderId + ") mas sem WS_TRADE CONFIRMED correspondente");
+                    orphan.put("issue", "SELL matched no CLOB (orderId=" + orderId + ") mas sem WS_TRADE CONFIRMED nem WORKER_CONFIRMED");
                     orphanOrders.add(orphan);
                 }
             }
@@ -1099,6 +1128,8 @@ public class EventTimelineService {
 
         boolean hasReconciled = types.contains("RECONCILED");
         boolean hasPnl = types.contains("PNL");
+        boolean hasWorkerConfirmed = types.contains("WORKER_CONFIRMED");
+        boolean hasWorkerTimeout = types.contains("WORKER_TIMEOUT");
 
         market.put("hasBuy", hasBuy);
         market.put("hasSell", hasSell);
@@ -1108,6 +1139,8 @@ public class EventTimelineService {
         market.put("hasManual", hasManual);
         market.put("hasReconciled", hasReconciled);
         market.put("hasPnl", hasPnl);
+        market.put("hasWorkerConfirmed", hasWorkerConfirmed);
+        market.put("hasWorkerTimeout", hasWorkerTimeout);
 
         return market;
     }
