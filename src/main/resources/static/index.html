@@ -232,6 +232,9 @@
         .tl-dot-block { background: #6366f1; border-color: #6366f1; }
         .tl-dot-worker { background: #0ea5e9; border-color: #0ea5e9; }
         .tl-dot-worker-timeout { background: #f59e0b; border-color: #f59e0b; }
+        .tl-dot-prediction { background: #06b6d4; border-color: #06b6d4; }
+        .tl-dot-prediction-hit { background: #14b8a6; border-color: #14b8a6; }
+        .tl-dot-prediction-miss { background: #f43f5e; border-color: #f43f5e; }
 
         .tl-header {
             display: flex;
@@ -270,6 +273,9 @@
         .tl-type-block { background: rgba(99,102,241,0.15); color: #6366f1; }
         .tl-type-worker { background: rgba(14,165,233,0.15); color: #0ea5e9; }
         .tl-type-worker-timeout { background: rgba(245,158,11,0.15); color: #f59e0b; }
+        .tl-type-prediction { background: rgba(6,182,212,0.15); color: #06b6d4; }
+        .tl-type-prediction-hit { background: rgba(20,184,166,0.15); color: #14b8a6; }
+        .tl-type-prediction-miss { background: rgba(244,63,94,0.15); color: #f43f5e; }
 
         .tl-time {
             font-size: 10px;
@@ -2476,6 +2482,8 @@
             if (type === 'DUST_REDEEM_REQUESTED') return 'tl-type-dust-redeem';
             if (type === 'DUST_REDEEM_CONFIRMED') return 'tl-type-dust-redeem-ok';
             if (type === 'DUST_REDEEM_FAILED') return 'tl-type-dust-redeem-fail';
+            if (type === 'PREDICTION_M2M' || type === 'PREDICTION_BLOCK' || type === 'PREDICTION_HORIZON') return 'tl-type-prediction';
+            if (type === 'PREDICTION_M2M_RESOLVED' || type === 'PREDICTION_BLOCK_RESOLVED' || type === 'PREDICTION_HORIZON_RESOLVED') return 'tl-type-prediction';
             return '';
         }
 
@@ -2501,6 +2509,8 @@
             if (type === 'DUST_REDEEM_REQUESTED') return 'tl-dot-dust-redeem';
             if (type === 'DUST_REDEEM_CONFIRMED') return 'tl-dot-dust-redeem-ok';
             if (type === 'DUST_REDEEM_FAILED') return 'tl-dot-dust-redeem-fail';
+            if (type === 'PREDICTION_M2M' || type === 'PREDICTION_BLOCK' || type === 'PREDICTION_HORIZON') return 'tl-dot-prediction';
+            if (type === 'PREDICTION_M2M_RESOLVED' || type === 'PREDICTION_BLOCK_RESOLVED' || type === 'PREDICTION_HORIZON_RESOLVED') return 'tl-dot-prediction';
             return '';
         }
 
@@ -2661,6 +2671,32 @@
                             valStyle = 'color:#10b981';
                         } else if (key === 'reconciledAt') {
                             valStyle = 'color:var(--text-dim)';
+                        } else if (key === 'direction') {
+                            valStyle = val === 'UP' ? 'color:var(--green);font-weight:700' : 'color:var(--red);font-weight:700';
+                            displayVal = val === 'UP' ? '\u25B2 UP' : '\u25BC DOWN';
+                        } else if (key === 'confidence') {
+                            const pct = (val * 100).toFixed(1);
+                            valStyle = val >= 0.7 ? 'color:var(--green);font-weight:700' : val >= 0.55 ? 'color:var(--yellow)' : 'color:var(--text-dim)';
+                            displayVal = pct + '%';
+                        } else if (key === 'hit' || key === 'hitCandle' || key === 'hitResolve') {
+                            valStyle = val ? 'color:var(--green);font-weight:700' : 'color:var(--red);font-weight:700';
+                            displayVal = val ? '\u2713 HIT' : '\u2717 MISS';
+                        } else if (key === 'valid') {
+                            valStyle = val ? 'color:var(--green)' : 'color:var(--orange);font-weight:700';
+                            displayVal = val ? '\u2713 VALID' : '\u26A0 INVALID';
+                        } else if (key === 'resolvedOutcome') {
+                            valStyle = (val === 'Up' || val === 'UP') ? 'color:var(--green)' : 'color:var(--red)';
+                            displayVal = (val === 'Up' || val === 'UP') ? '\u25B2 Up' : '\u25BC Down';
+                        } else if (key === 'predictionType') {
+                            valStyle = 'color:#06b6d4';
+                        } else if (key === 'openMid' || key === 'closeMid' || key === 'modelThreshold' || key === 'marketOpen') {
+                            displayVal = typeof val === 'number' ? val.toFixed(2) : val;
+                            valStyle = 'color:var(--text)';
+                        } else if (key === 'minuteInBlock') {
+                            displayVal = 'min ' + val + '/5';
+                            valStyle = 'color:var(--text-dim)';
+                        } else if (key === 'modelKey') {
+                            valStyle = 'color:#06b6d4';
                         } else if (typeof val === 'string' && val.startsWith('0x') && val.length > 20) {
                             displayVal = val.substring(0, 10) + '...' + val.substring(val.length - 6);
                         }
@@ -4157,6 +4193,32 @@
                             valStyle = val === 'TP' ? 'color:var(--green)' : val === 'SL' ? 'color:var(--red)' : 'color:var(--accent)';
                         } else if (key === 'fillSource') {
                             valStyle = 'color:var(--accent)';
+                        } else if (key === 'direction') {
+                            valStyle = val === 'UP' ? 'color:var(--green);font-weight:700' : 'color:var(--red);font-weight:700';
+                            displayVal = val === 'UP' ? '\u25B2 UP' : '\u25BC DOWN';
+                        } else if (key === 'confidence') {
+                            const pct = (val * 100).toFixed(1);
+                            valStyle = val >= 0.7 ? 'color:var(--green);font-weight:700' : val >= 0.55 ? 'color:var(--yellow)' : 'color:var(--text-dim)';
+                            displayVal = pct + '%';
+                        } else if (key === 'hit' || key === 'hitCandle' || key === 'hitResolve') {
+                            valStyle = val ? 'color:var(--green);font-weight:700' : 'color:var(--red);font-weight:700';
+                            displayVal = val ? '\u2713 HIT' : '\u2717 MISS';
+                        } else if (key === 'valid') {
+                            valStyle = val ? 'color:var(--green)' : 'color:var(--orange);font-weight:700';
+                            displayVal = val ? '\u2713 VALID' : '\u26A0 INVALID';
+                        } else if (key === 'resolvedOutcome') {
+                            valStyle = (val === 'Up' || val === 'UP') ? 'color:var(--green)' : 'color:var(--red)';
+                            displayVal = (val === 'Up' || val === 'UP') ? '\u25B2 Up' : '\u25BC Down';
+                        } else if (key === 'predictionType') {
+                            valStyle = 'color:#06b6d4';
+                        } else if (key === 'openMid' || key === 'closeMid' || key === 'modelThreshold' || key === 'marketOpen') {
+                            displayVal = typeof val === 'number' ? val.toFixed(2) : val;
+                            valStyle = 'color:var(--text)';
+                        } else if (key === 'minuteInBlock') {
+                            displayVal = 'min ' + val + '/5';
+                            valStyle = 'color:var(--text-dim)';
+                        } else if (key === 'modelKey') {
+                            valStyle = 'color:#06b6d4';
                         } else if (typeof val === 'string' && val.startsWith('0x') && val.length > 20) {
                             displayVal = val.substring(0, 10) + '...' + val.substring(val.length - 6);
                         }
