@@ -1097,12 +1097,12 @@
                         <span>a</span>
                         <input type="number" id="ph-day-to" min="1" max="31" value="31" class="heatmap-input">
                     </div>
-                    <div class="heatmap-filter-group">
-                        <label>Faixa:</label>
-                        <select id="ph-band-selector" class="heatmap-input" style="width:auto;min-width:100px;" onchange="renderPredictionHeatmap()"></select>
-                    </div>
                     <button class="heatmap-btn" onclick="renderPredictionHeatmap()">Filtrar</button>
                     <button class="heatmap-btn heatmap-btn-reset" onclick="resetPhFilters()">Reset</button>
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                        <label style="font-size:11px;color:var(--text-dim);margin-right:2px;">Faixas:</label>
+                        <div class="mode-toggle" id="ph-band-toggles"></div>
+                    </div>
                 </div>
             </div>
             <div class="page-body" style="padding:12px 16px;overflow-x:auto;">
@@ -5139,7 +5139,39 @@
             document.getElementById('ph-hour-to').value = 23;
             document.getElementById('ph-day-from').value = 1;
             document.getElementById('ph-day-to').value = phData.daysInMonth;
-            document.getElementById('ph-band-selector').value = 'ALL';
+            // Ligar todas as faixas
+            document.querySelectorAll('#ph-band-toggles .mode-btn').forEach(btn => btn.classList.add('active'));
+            renderPredictionHeatmap();
+        }
+
+        function buildPhBandToggles() {
+            const container = document.getElementById('ph-band-toggles');
+            let html = '<button class="mode-btn active" onclick="phToggleAllBands()">TODOS</button>';
+            for (let i = 0; i < phData.bands.length; i++) {
+                const b = phData.bands[i];
+                const hasData = b.totalCount > 0;
+                html += '<button class="mode-btn' + (hasData ? ' active' : '') + '" data-band-idx="' + i + '" onclick="phToggleBand(this)" style="font-size:10px;' + (!hasData ? 'opacity:0.4;' : '') + '">' + phShortLabel(b.label) + '</button>';
+            }
+            container.innerHTML = html;
+        }
+
+        function phToggleBand(btn) {
+            btn.classList.toggle('active');
+            // Atualizar botao TODOS
+            const allBtn = document.querySelector('#ph-band-toggles .mode-btn:first-child');
+            const bandBtns = document.querySelectorAll('#ph-band-toggles .mode-btn[data-band-idx]');
+            const allActive = Array.from(bandBtns).every(b => b.classList.contains('active'));
+            allBtn.classList.toggle('active', allActive);
+            renderPredictionHeatmap();
+        }
+
+        function phToggleAllBands() {
+            const allBtn = document.querySelector('#ph-band-toggles .mode-btn:first-child');
+            const bandBtns = document.querySelectorAll('#ph-band-toggles .mode-btn[data-band-idx]');
+            const allActive = Array.from(bandBtns).every(b => b.classList.contains('active'));
+            // Se todos ativos, desliga todos; senao liga todos
+            bandBtns.forEach(b => b.classList.toggle('active', !allActive));
+            allBtn.classList.toggle('active', !allActive);
             renderPredictionHeatmap();
         }
 
@@ -5163,18 +5195,8 @@
                 document.getElementById('ph-day-to').value = phData.daysInMonth;
                 document.getElementById('ph-day-to').max = phData.daysInMonth;
 
-                // Preencher selector de bandas
-                const bandSel = document.getElementById('ph-band-selector');
-                bandSel.innerHTML = '<option value="ALL">Todas as Faixas</option>';
-                for (let i = 0; i < phData.bands.length; i++) {
-                    const b = phData.bands[i];
-                    if (b.totalCount > 0) {
-                        const opt = document.createElement('option');
-                        opt.value = i;
-                        opt.textContent = b.label + ' (' + b.totalCount + ')';
-                        bandSel.appendChild(opt);
-                    }
-                }
+                // Preencher toggles de bandas
+                buildPhBandToggles();
 
                 renderPredictionHeatmap();
             } catch (e) {
@@ -5205,7 +5227,6 @@
             const hourTo = parseInt(document.getElementById('ph-hour-to').value);
             const dayFrom = parseInt(document.getElementById('ph-day-from').value);
             const dayTo = Math.min(parseInt(document.getElementById('ph-day-to').value), phData.daysInMonth);
-            const bandChoice = document.getElementById('ph-band-selector').value;
 
             const hours = [];
             for (let h = hourFrom; h <= hourTo; h++) hours.push(h);
@@ -5215,14 +5236,12 @@
             const meses = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
             const monthLabel = meses[phData.month] + ' ' + phData.year;
 
-            // Determinar quais bandas renderizar
-            let bandsToRender = [];
-            if (bandChoice === 'ALL') {
-                bandsToRender = phData.bands.filter(b => b.totalCount > 0);
-            } else {
-                const idx = parseInt(bandChoice);
-                if (phData.bands[idx]) bandsToRender = [phData.bands[idx]];
-            }
+            // Determinar quais bandas estao ativas nos toggles
+            const activeBandIdxs = new Set();
+            document.querySelectorAll('#ph-band-toggles .mode-btn[data-band-idx].active').forEach(btn => {
+                activeBandIdxs.add(parseInt(btn.dataset.bandIdx));
+            });
+            let bandsToRender = phData.bands.filter((b, i) => activeBandIdxs.has(i) && b.totalCount > 0);
 
             if (bandsToRender.length === 0) {
                 container.innerHTML = '<div class="empty-state"><h2>Sem dados</h2><p>Nenhuma predicao encontrada no periodo.</p></div>';
