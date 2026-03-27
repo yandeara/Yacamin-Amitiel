@@ -835,6 +835,13 @@
                 <span class="nav-icon">&#9201;</span>
                 Timeline Eventos
             </button>
+            <div class="nav-section">Rafael</div>
+            <button class="nav-item" data-page="prediction-accuracy" onclick="navigate('prediction-accuracy')">
+                Acuracia Predicao
+            </button>
+            <button class="nav-item" data-page="prediction-heatmap" onclick="navigate('prediction-heatmap')">
+                Heatmap Predicao
+            </button>
             <div class="nav-section">Simulacao</div>
             <button class="nav-item" data-page="sim-events" onclick="navigate('sim-events')">
                 <span class="nav-icon">&#9201;</span>
@@ -1011,6 +1018,103 @@
         </div>
 
         <!-- Page: Timeline Simulado -->
+        <!-- Page: Prediction Accuracy (Rafael) -->
+        <div class="page" id="page-prediction-accuracy">
+            <div class="page-header" style="flex-direction:column;align-items:flex-start;">
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <span class="page-title" id="pa-title">Acuracia - Horizon</span>
+                </div>
+                <div id="pa-filters" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;">
+                    <div class="mode-toggle" id="pa-type-selector">
+                        <button class="mode-btn active" onclick="setPaType('HORIZON')">Horizon</button>
+                        <button class="mode-btn" onclick="setPaType('BLOCK')">Block (5m)</button>
+                        <button class="mode-btn" onclick="setPaType('M2M')">M2M (1m)</button>
+                    </div>
+                    <div class="mode-toggle" id="pa-valid-selector" style="display:none;">
+                        <button class="mode-btn active" onclick="setPaValid('TODOS')">Todos</button>
+                        <button class="mode-btn" onclick="setPaValid('VALID')">Valid</button>
+                        <button class="mode-btn" onclick="setPaValid('INVALID')">Invalid</button>
+                    </div>
+                    <div class="heatmap-filter-group">
+                        <label>De:</label>
+                        <input type="date" id="pa-date-from" class="heatmap-input" style="width:140px;">
+                    </div>
+                    <div class="heatmap-filter-group">
+                        <label>At&#233;:</label>
+                        <input type="date" id="pa-date-to" class="heatmap-input" style="width:140px;">
+                    </div>
+                    <div class="mode-toggle" id="pa-range-selector">
+                        <button class="mode-btn" onclick="setPaRange('today')">Hoje</button>
+                        <button class="mode-btn active" onclick="setPaRange('7d')">7 dias</button>
+                        <button class="mode-btn" onclick="setPaRange('30d')">30 dias</button>
+                        <button class="mode-btn" onclick="setPaRange('all')">Tudo</button>
+                    </div>
+                    <button class="heatmap-btn" onclick="fetchPredictionAccuracy()">Buscar</button>
+                </div>
+            </div>
+            <div class="page-body" style="padding:20px 24px;">
+                <div id="prediction-accuracy-container">
+                    <div class="empty-state">
+                        <h2>Selecione um periodo</h2>
+                        <p>Escolha um intervalo de datas para ver a acuracia das predicoes.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page: Prediction Heatmap (Rafael) -->
+        <div class="page" id="page-prediction-heatmap">
+            <div class="page-header" style="flex-direction:column;align-items:flex-start;">
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <span class="page-title" id="ph-title">Heatmap Predicao - Horizon</span>
+                </div>
+                <div class="heatmap-filters" style="margin-top:10px;">
+                    <div class="mode-toggle" id="ph-type-selector">
+                        <button class="mode-btn active" onclick="setPhType('HORIZON')">Horizon</button>
+                        <button class="mode-btn" onclick="setPhType('BLOCK')">Block (5m)</button>
+                        <button class="mode-btn" onclick="setPhType('M2M')">M2M (1m)</button>
+                    </div>
+                    <div class="mode-toggle" id="ph-valid-selector" style="display:none;">
+                        <button class="mode-btn active" onclick="setPhValid('TODOS')">Todos</button>
+                        <button class="mode-btn" onclick="setPhValid('VALID')">Valid</button>
+                        <button class="mode-btn" onclick="setPhValid('INVALID')">Invalid</button>
+                    </div>
+                    <div class="heatmap-filter-group">
+                        <label>Mes/Ano:</label>
+                        <select id="ph-month"></select>
+                        <select id="ph-year"></select>
+                        <button class="heatmap-btn" onclick="fetchPredictionHeatmap()">Buscar</button>
+                    </div>
+                    <div class="heatmap-filter-group">
+                        <label>Horas:</label>
+                        <select id="ph-hour-from"></select>
+                        <span>a</span>
+                        <select id="ph-hour-to"></select>
+                    </div>
+                    <div class="heatmap-filter-group">
+                        <label>Dias:</label>
+                        <input type="number" id="ph-day-from" min="1" max="31" value="1" class="heatmap-input">
+                        <span>a</span>
+                        <input type="number" id="ph-day-to" min="1" max="31" value="31" class="heatmap-input">
+                    </div>
+                    <div class="heatmap-filter-group">
+                        <label>Faixa:</label>
+                        <select id="ph-band-selector" class="heatmap-input" style="width:auto;min-width:100px;" onchange="renderPredictionHeatmap()"></select>
+                    </div>
+                    <button class="heatmap-btn" onclick="renderPredictionHeatmap()">Filtrar</button>
+                    <button class="heatmap-btn heatmap-btn-reset" onclick="resetPhFilters()">Reset</button>
+                </div>
+            </div>
+            <div class="page-body" style="padding:12px 16px;overflow-x:auto;">
+                <div id="ph-container">
+                    <div class="empty-state">
+                        <h2>Selecione um periodo</h2>
+                        <p>Escolha mes, ano e tipo de predicao para visualizar o heatmap.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="page" id="page-sim-events">
             <div class="page-header" style="flex-direction:column;align-items:flex-start;">
                 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
@@ -1437,6 +1541,16 @@
 
             if (page === 'sim-events') {
                 initSeFilters();
+                return;
+            }
+
+            if (page === 'prediction-accuracy') {
+                initPaFilters();
+                return;
+            }
+
+            if (page === 'prediction-heatmap') {
+                initPhFilters();
                 return;
             }
         }
@@ -4786,6 +4900,440 @@
                     status.textContent = 'Erro: ' + e.message;
                 }
             }
+        }
+
+        /* ── Prediction Accuracy (Rafael) ─────────── */
+        let paFiltersInitialized = false;
+        let paType = 'HORIZON';
+        let paValidFilter = 'TODOS';
+
+        function initPaFilters() {
+            if (paFiltersInitialized) return;
+            paFiltersInitialized = true;
+            setPaRange('7d');
+        }
+
+        function setPaType(type) {
+            paType = type;
+            const titles = { 'HORIZON': 'Acuracia - Horizon', 'BLOCK': 'Acuracia - Block (5m)', 'M2M': 'Acuracia - M2M (1m)' };
+            document.getElementById('pa-title').textContent = titles[type] || 'Acuracia';
+            document.querySelectorAll('#pa-type-selector .mode-btn').forEach(btn => {
+                const labels = { 'HORIZON': 'Horizon', 'BLOCK': 'Block (5m)', 'M2M': 'M2M (1m)' };
+                btn.classList.toggle('active', btn.textContent.trim() === labels[type]);
+            });
+            // Mostrar filtro valid apenas para BLOCK
+            document.getElementById('pa-valid-selector').style.display = type === 'BLOCK' ? '' : 'none';
+            if (type !== 'BLOCK') paValidFilter = 'TODOS';
+        }
+
+        function setPaValid(v) {
+            paValidFilter = v;
+            const labels = { 'TODOS': 'Todos', 'VALID': 'Valid', 'INVALID': 'Invalid' };
+            document.querySelectorAll('#pa-valid-selector .mode-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.trim() === labels[v]);
+            });
+        }
+
+        function setPaRange(range) {
+            const now = new Date();
+            const today = fmtDate(now);
+            let from = today, to = today;
+            if (range === '7d') {
+                const d = new Date(now); d.setDate(d.getDate() - 6);
+                from = fmtDate(d);
+            } else if (range === '30d') {
+                const d = new Date(now); d.setDate(d.getDate() - 29);
+                from = fmtDate(d);
+            } else if (range === 'all') {
+                from = '2020-01-01';
+            }
+            document.getElementById('pa-date-from').value = from;
+            document.getElementById('pa-date-to').value = to;
+            document.querySelectorAll('#pa-range-selector .mode-btn').forEach(btn => {
+                const labels = {'today':'Hoje','7d':'7 dias','30d':'30 dias','all':'Tudo'};
+                btn.classList.toggle('active', btn.textContent.trim() === labels[range]);
+            });
+        }
+
+        async function fetchPredictionAccuracy() {
+            const container = document.getElementById('prediction-accuracy-container');
+            container.innerHTML = '<div class="empty-state"><h2>Carregando...</h2></div>';
+
+            const dateFrom = document.getElementById('pa-date-from').value;
+            const dateTo = document.getElementById('pa-date-to').value;
+            if (!dateFrom || !dateTo) {
+                container.innerHTML = '<div class="empty-state"><h2>Selecione datas</h2></div>';
+                return;
+            }
+
+            try {
+                let url = '/api/dashboard/prediction-accuracy?dateFrom=' + dateFrom + '&dateTo=' + dateTo + '&predictionType=' + paType;
+                if (paType === 'BLOCK' && paValidFilter !== 'TODOS') {
+                    url += '&validFilter=' + paValidFilter;
+                }
+                const res = await fetch(url);
+                if (res.status === 401) { window.location.href = '/login'; return; }
+                if (!res.ok) throw new Error(res.status);
+                const data = await res.json();
+                renderPredictionAccuracy(data);
+            } catch (e) {
+                container.innerHTML = '<div class="empty-state"><h2>Erro</h2><p>' + e.message + '</p></div>';
+            }
+        }
+
+        function renderPredictionAccuracy(data) {
+            const container = document.getElementById('prediction-accuracy-container');
+            const typeLabels = { 'HORIZON': 'PREDICTION_HORIZON_RESOLVED', 'BLOCK': 'PREDICTION_BLOCK_RESOLVED', 'M2M': 'PREDICTION_M2M_RESOLVED' };
+            const hitLabel = data.predictionType === 'M2M' ? 'Acertou' : 'Acertou Resolve';
+            const missLabel = data.predictionType === 'M2M' ? 'Errou' : 'Errou Resolve';
+
+            if (!data.bands || data.totalEvents === 0) {
+                container.innerHTML = '<div class="empty-state"><h2>Sem dados</h2><p>Nenhum evento ' + (typeLabels[data.predictionType] || '') + ' encontrado no periodo.</p></div>';
+                return;
+            }
+
+            let html = '';
+
+            // Summary cards
+            html += '<div class="eh-summary">';
+            html += '<div class="eh-summary-card"><div class="eh-summary-label">Total Predicoes</div><div class="eh-summary-value">' + data.totalEvents + '</div></div>';
+            html += '<div class="eh-summary-card"><div class="eh-summary-label">Acertos</div><div class="eh-summary-value" style="color:var(--green)">' + data.totalHit + '</div></div>';
+            html += '<div class="eh-summary-card"><div class="eh-summary-label">Erros</div><div class="eh-summary-value" style="color:var(--red)">' + data.totalMiss + '</div></div>';
+            html += '<div class="eh-summary-card"><div class="eh-summary-label">Acuracia Geral</div><div class="eh-summary-value" style="color:' + (data.overallAccuracy >= 50 ? 'var(--green)' : 'var(--red)') + '">' + data.overallAccuracy.toFixed(2) + '%</div></div>';
+            if (data.validFilter && data.validFilter !== 'TODOS') {
+                html += '<div class="eh-summary-card"><div class="eh-summary-label">Filtro</div><div class="eh-summary-value" style="color:var(--yellow)">' + data.validFilter + '</div></div>';
+            }
+            html += '</div>';
+
+            // Bar chart
+            html += '<div class="eh-market-card" style="padding:20px;">';
+            html += '<div style="margin-bottom:16px;font-weight:700;font-size:14px;">Acuracia por Faixa de Confianca</div>';
+
+            const maxTotal = Math.max(...data.bands.map(b => b.total), 1);
+
+            for (const band of data.bands) {
+                const hitPct = band.total > 0 ? (band.hit / band.total * 100) : 0;
+                const missPct = band.total > 0 ? (band.miss / band.total * 100) : 0;
+                const barWidth = band.total > 0 ? Math.max((band.total / maxTotal) * 100, 10) : 10;
+
+                html += '<div style="margin-bottom:16px;">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+                html += '<span style="font-weight:700;font-size:13px;min-width:80px;">' + band.label + '</span>';
+                html += '<span style="font-size:12px;color:var(--text-dim);">' + band.total + ' predicoes</span>';
+                html += '<span style="font-weight:700;font-size:13px;color:' + (band.accuracy >= 50 ? 'var(--green)' : 'var(--red)') + ';">' + band.accuracy.toFixed(1) + '%</span>';
+                html += '</div>';
+
+                // Stacked bar
+                html += '<div style="display:flex;height:28px;border-radius:6px;overflow:hidden;background:var(--surface2);width:' + barWidth + '%;">';
+                if (band.hit > 0) {
+                    html += '<div style="width:' + hitPct + '%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;min-width:30px;">' + band.hit + '</div>';
+                }
+                if (band.miss > 0) {
+                    html += '<div style="width:' + missPct + '%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;min-width:30px;">' + band.miss + '</div>';
+                }
+                html += '</div>';
+
+                html += '</div>';
+            }
+
+            // Legend
+            html += '<div style="display:flex;gap:20px;margin-top:12px;font-size:11px;color:var(--text-dim);">';
+            html += '<div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:3px;background:var(--green);"></div> ' + hitLabel + '</div>';
+            html += '<div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:3px;background:var(--red);"></div> ' + missLabel + '</div>';
+            html += '</div>';
+
+            html += '</div>';
+
+            // Detail table
+            html += '<div class="eh-market-card" style="overflow-x:auto;">';
+            html += '<table class="eh-entries-table">';
+            html += '<thead><tr><th>Faixa</th><th>Acertos</th><th>Erros</th><th>Total</th><th>Acuracia</th></tr></thead>';
+            html += '<tbody>';
+            for (const band of data.bands) {
+                html += '<tr>';
+                html += '<td style="font-weight:700;">' + band.label + '</td>';
+                html += '<td style="color:var(--green);font-weight:700;">' + band.hit + '</td>';
+                html += '<td style="color:var(--red);font-weight:700;">' + band.miss + '</td>';
+                html += '<td>' + band.total + '</td>';
+                html += '<td style="font-weight:700;color:' + (band.accuracy >= 50 ? 'var(--green)' : 'var(--red)') + ';">' + band.accuracy.toFixed(2) + '%</td>';
+                html += '</tr>';
+            }
+            // Total row
+            html += '<tr style="border-top:2px solid var(--border);font-weight:700;">';
+            html += '<td>TOTAL</td>';
+            html += '<td style="color:var(--green);">' + data.totalHit + '</td>';
+            html += '<td style="color:var(--red);">' + data.totalMiss + '</td>';
+            html += '<td>' + data.totalEvents + '</td>';
+            html += '<td style="color:' + (data.overallAccuracy >= 50 ? 'var(--green)' : 'var(--red)') + ';">' + data.overallAccuracy.toFixed(2) + '%</td>';
+            html += '</tr>';
+            html += '</tbody></table></div>';
+
+            container.innerHTML = html;
+        }
+
+        /* ── Prediction Heatmap (Rafael) ──────────── */
+        let phFiltersInitialized = false;
+        let phType = 'HORIZON';
+        let phValidFilter = 'TODOS';
+        let phData = null;
+
+        function initPhFilters() {
+            if (phFiltersInitialized) return;
+            phFiltersInitialized = true;
+
+            const now = new Date();
+            const monthSel = document.getElementById('ph-month');
+            const yearSel = document.getElementById('ph-year');
+            const meses = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+            for (let m = 1; m <= 12; m++) {
+                const opt = document.createElement('option');
+                opt.value = m; opt.textContent = meses[m];
+                monthSel.appendChild(opt);
+            }
+            monthSel.value = now.getMonth() + 1;
+
+            for (let y = now.getFullYear(); y >= 2024; y--) {
+                const opt = document.createElement('option');
+                opt.value = y; opt.textContent = y;
+                yearSel.appendChild(opt);
+            }
+            yearSel.value = now.getFullYear();
+
+            const hourFrom = document.getElementById('ph-hour-from');
+            const hourTo = document.getElementById('ph-hour-to');
+            for (let h = 0; h < 24; h++) {
+                const label = String(h).padStart(2, '0') + ':00';
+                [hourFrom, hourTo].forEach(sel => {
+                    const opt = document.createElement('option');
+                    opt.value = h; opt.textContent = label;
+                    sel.appendChild(opt);
+                });
+            }
+            hourFrom.value = 0;
+            hourTo.value = 23;
+        }
+
+        function setPhType(type) {
+            phType = type;
+            const titles = { 'HORIZON': 'Heatmap Predicao - Horizon', 'BLOCK': 'Heatmap Predicao - Block (5m)', 'M2M': 'Heatmap Predicao - M2M (1m)' };
+            document.getElementById('ph-title').textContent = titles[type] || 'Heatmap Predicao';
+            document.querySelectorAll('#ph-type-selector .mode-btn').forEach(btn => {
+                const labels = { 'HORIZON': 'Horizon', 'BLOCK': 'Block (5m)', 'M2M': 'M2M (1m)' };
+                btn.classList.toggle('active', btn.textContent.trim() === labels[type]);
+            });
+            document.getElementById('ph-valid-selector').style.display = type === 'BLOCK' ? '' : 'none';
+            if (type !== 'BLOCK') phValidFilter = 'TODOS';
+        }
+
+        function setPhValid(v) {
+            phValidFilter = v;
+            const labels = { 'TODOS': 'Todos', 'VALID': 'Valid', 'INVALID': 'Invalid' };
+            document.querySelectorAll('#ph-valid-selector .mode-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.trim() === labels[v]);
+            });
+        }
+
+        function resetPhFilters() {
+            if (!phData) return;
+            document.getElementById('ph-hour-from').value = 0;
+            document.getElementById('ph-hour-to').value = 23;
+            document.getElementById('ph-day-from').value = 1;
+            document.getElementById('ph-day-to').value = phData.daysInMonth;
+            document.getElementById('ph-band-selector').value = 'ALL';
+            renderPredictionHeatmap();
+        }
+
+        async function fetchPredictionHeatmap() {
+            const container = document.getElementById('ph-container');
+            container.innerHTML = '<div class="empty-state"><h2>Carregando...</h2></div>';
+
+            const year = document.getElementById('ph-year').value;
+            const month = document.getElementById('ph-month').value;
+
+            try {
+                let url = '/api/dashboard/prediction-heatmap?year=' + year + '&month=' + month + '&predictionType=' + phType;
+                if (phType === 'BLOCK' && phValidFilter !== 'TODOS') {
+                    url += '&validFilter=' + phValidFilter;
+                }
+                const res = await fetch(url);
+                if (res.status === 401) { window.location.href = '/login'; return; }
+                if (!res.ok) throw new Error(res.status);
+                phData = await res.json();
+
+                document.getElementById('ph-day-to').value = phData.daysInMonth;
+                document.getElementById('ph-day-to').max = phData.daysInMonth;
+
+                // Preencher selector de bandas
+                const bandSel = document.getElementById('ph-band-selector');
+                bandSel.innerHTML = '<option value="ALL">Todas as Faixas</option>';
+                for (let i = 0; i < phData.bands.length; i++) {
+                    const b = phData.bands[i];
+                    if (b.totalCount > 0) {
+                        const opt = document.createElement('option');
+                        opt.value = i;
+                        opt.textContent = b.label + ' (' + b.totalCount + ')';
+                        bandSel.appendChild(opt);
+                    }
+                }
+
+                renderPredictionHeatmap();
+            } catch (e) {
+                container.innerHTML = '<div class="empty-state"><h2>Erro</h2><p>' + e.message + '</p></div>';
+            }
+        }
+
+        function phAccColor(hit, miss) {
+            const total = hit + miss;
+            if (total === 0) return 'var(--text-dim)';
+            if (miss === 0) return 'var(--green)';
+            if (hit === 0) return 'var(--red)';
+            return 'var(--yellow)';
+        }
+
+        function phShortLabel(label) {
+            return label.replace('%', '');
+        }
+
+        function renderPredictionHeatmap() {
+            const container = document.getElementById('ph-container');
+            if (!phData || !phData.bands) {
+                container.innerHTML = '<div class="empty-state"><h2>Sem dados</h2></div>';
+                return;
+            }
+
+            const hourFrom = parseInt(document.getElementById('ph-hour-from').value);
+            const hourTo = parseInt(document.getElementById('ph-hour-to').value);
+            const dayFrom = parseInt(document.getElementById('ph-day-from').value);
+            const dayTo = Math.min(parseInt(document.getElementById('ph-day-to').value), phData.daysInMonth);
+            const bandChoice = document.getElementById('ph-band-selector').value;
+
+            const hours = [];
+            for (let h = hourFrom; h <= hourTo; h++) hours.push(h);
+            const days = [];
+            for (let d = dayFrom; d <= dayTo; d++) days.push(d);
+
+            const meses = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+            const monthLabel = meses[phData.month] + ' ' + phData.year;
+
+            // Determinar quais bandas renderizar
+            let bandsToRender = [];
+            if (bandChoice === 'ALL') {
+                bandsToRender = phData.bands.filter(b => b.totalCount > 0);
+            } else {
+                const idx = parseInt(bandChoice);
+                if (phData.bands[idx]) bandsToRender = [phData.bands[idx]];
+            }
+
+            if (bandsToRender.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h2>Sem dados</h2><p>Nenhuma predicao encontrada no periodo.</p></div>';
+                return;
+            }
+
+            const multiBand = bandsToRender.length > 1;
+            let html = '';
+
+            // Summary geral
+            let grandHit = 0, grandMiss = 0;
+            for (const b of phData.bands) { grandHit += b.totalHit; grandMiss += b.totalMiss; }
+            const grandTotal = grandHit + grandMiss;
+            const grandAcc = grandTotal > 0 ? (grandHit / grandTotal * 100) : 0;
+
+            html += '<div class="heatmap-summary">';
+            html += '<div class="heatmap-summary-card" style="border-top:3px solid var(--accent);">';
+            html += '<div class="heatmap-summary-label">Total (' + monthLabel + ')</div>';
+            html += '<div class="heatmap-summary-value">' + grandTotal + '</div></div>';
+            html += '<div class="heatmap-summary-card" style="border-top:3px solid var(--green);">';
+            html += '<div class="heatmap-summary-label">Acertos</div>';
+            html += '<div class="heatmap-summary-value" style="color:var(--green)">' + grandHit + '</div></div>';
+            html += '<div class="heatmap-summary-card" style="border-top:3px solid var(--red);">';
+            html += '<div class="heatmap-summary-label">Erros</div>';
+            html += '<div class="heatmap-summary-value" style="color:var(--red)">' + grandMiss + '</div></div>';
+            html += '<div class="heatmap-summary-card" style="border-top:3px solid ' + phAccColor(grandHit, grandMiss) + ';">';
+            html += '<div class="heatmap-summary-label">Acuracia</div>';
+            html += '<div class="heatmap-summary-value" style="color:' + phAccColor(grandHit, grandMiss) + '">' + grandAcc.toFixed(1) + '%</div></div>';
+            html += '</div>';
+
+            // Unica tabela com bandas empilhadas por celula
+            html += '<table class="heatmap-table"><thead><tr>';
+            html += '<th class="heatmap-hour-header">Hora</th>';
+            for (const d of days) html += '<th>D' + d + '</th>';
+            html += '<th>Total</th></tr></thead><tbody>';
+
+            for (const h of hours) {
+                const hourLabel = String(h).padStart(2, '0') + ':00';
+                html += '<tr><td class="heatmap-hour-col">' + hourLabel + '</td>';
+
+                for (const d of days) {
+                    const parts = [];
+                    for (const band of bandsToRender) {
+                        const cell = band.grid[h].days[d - 1];
+                        if (cell && cell.total > 0) {
+                            const color = phAccColor(cell.hit, cell.miss);
+                            const prefix = multiBand ? '<span style="font-size:8px;color:var(--text-dim);">' + phShortLabel(band.label) + '</span> ' : '';
+                            parts.push(prefix + '<span style="color:' + color + '">' + cell.hit + '/' + cell.total + '</span>');
+                        }
+                    }
+                    html += '<td style="line-height:1.4">' + (parts.length > 0 ? parts.join('<br>') : '') + '</td>';
+                }
+
+                // Hour total
+                const hParts = [];
+                for (const band of bandsToRender) {
+                    let hHit = 0, hMiss = 0;
+                    for (const d of days) {
+                        const cell = band.grid[h].days[d - 1];
+                        if (cell) { hHit += cell.hit; hMiss += cell.miss; }
+                    }
+                    if (hHit + hMiss > 0) {
+                        const color = phAccColor(hHit, hMiss);
+                        const prefix = multiBand ? '<span style="font-size:8px;color:var(--text-dim);">' + phShortLabel(band.label) + '</span> ' : '';
+                        hParts.push(prefix + '<span style="color:' + color + '">' + hHit + '/' + (hHit + hMiss) + '</span>');
+                    }
+                }
+                html += '<td class="heatmap-total-col" style="line-height:1.4">' + (hParts.length > 0 ? hParts.join('<br>') : '') + '</td>';
+                html += '</tr>';
+            }
+
+            // Day totals row
+            html += '<tr class="heatmap-total-row"><td class="heatmap-hour-col">Total</td>';
+            for (const d of days) {
+                const dParts = [];
+                for (const band of bandsToRender) {
+                    let dHit = 0, dMiss = 0;
+                    for (const h of hours) {
+                        const cell = band.grid[h].days[d - 1];
+                        if (cell) { dHit += cell.hit; dMiss += cell.miss; }
+                    }
+                    if (dHit + dMiss > 0) {
+                        const color = phAccColor(dHit, dMiss);
+                        const prefix = multiBand ? '<span style="font-size:8px;color:var(--text-dim);">' + phShortLabel(band.label) + '</span> ' : '';
+                        dParts.push(prefix + '<span style="color:' + color + '">' + dHit + '/' + (dHit + dMiss) + '</span>');
+                    }
+                }
+                html += '<td class="heatmap-total-col" style="line-height:1.4">' + (dParts.length > 0 ? dParts.join('<br>') : '') + '</td>';
+            }
+
+            // Grand total
+            const gParts = [];
+            for (const band of bandsToRender) {
+                let bHit = 0, bMiss = 0;
+                for (const h of hours) {
+                    for (const d of days) {
+                        const cell = band.grid[h].days[d - 1];
+                        if (cell) { bHit += cell.hit; bMiss += cell.miss; }
+                    }
+                }
+                if (bHit + bMiss > 0) {
+                    const color = phAccColor(bHit, bMiss);
+                    const prefix = multiBand ? '<span style="font-size:8px;color:var(--text-dim);">' + phShortLabel(band.label) + '</span> ' : '';
+                    const acc = ((bHit / (bHit + bMiss)) * 100).toFixed(0);
+                    gParts.push(prefix + '<span style="color:' + color + '">' + bHit + '/' + (bHit + bMiss) + ' (' + acc + '%)</span>');
+                }
+            }
+            html += '<td class="heatmap-total-col" style="line-height:1.4">' + (gParts.length > 0 ? gParts.join('<br>') : '') + '</td>';
+            html += '</tr></tbody></table>';
+
+            container.innerHTML = html;
         }
 
         /* ── Init ────────────────────────────────────── */

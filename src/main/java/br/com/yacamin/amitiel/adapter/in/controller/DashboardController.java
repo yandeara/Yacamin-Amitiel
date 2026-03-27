@@ -4,6 +4,8 @@ import br.com.yacamin.amitiel.application.service.algoritms.simulation.SimPnlQue
 import br.com.yacamin.amitiel.application.service.event.EventTimelineService;
 import br.com.yacamin.amitiel.application.service.event.EventHeatmapService;
 import br.com.yacamin.amitiel.application.service.event.SimEventTimelineService;
+import br.com.yacamin.amitiel.application.service.prediction.PredictionAccuracyService;
+import br.com.yacamin.amitiel.application.service.prediction.PredictionHeatmapService;
 import br.com.yacamin.amitiel.application.service.MarketGroupQueryService;
 import br.com.yacamin.amitiel.application.service.AlgorithmQueryService;
 import br.com.yacamin.amitiel.application.service.verification.VerificationService;
@@ -42,6 +44,8 @@ public class DashboardController {
     private final AutoSnapshotScheduler autoSnapshotScheduler;
     private final MarketGroupQueryService marketGroupQueryService;
     private final AlgorithmQueryService algorithmQueryService;
+    private final PredictionAccuracyService predictionAccuracyService;
+    private final PredictionHeatmapService predictionHeatmapService;
 
     @GetMapping("/market-groups")
     public List<Map<String, Object>> getMarketGroups() {
@@ -299,6 +303,39 @@ public class DashboardController {
             // Config salva em memoria, falha de persistencia nao bloqueia
         }
         return configService.getConfigMap();
+    }
+
+    // ─── Prediction Accuracy (Rafael) ───────────────────────────
+
+    @GetMapping("/prediction-accuracy")
+    public Map<String, Object> getPredictionAccuracy(
+            @RequestParam String dateFrom,
+            @RequestParam String dateTo,
+            @RequestParam(defaultValue = "0") int hourFrom,
+            @RequestParam(defaultValue = "23") int hourTo,
+            @RequestParam(defaultValue = "HORIZON") String predictionType,
+            @RequestParam(required = false) String validFilter) {
+
+        LocalDate dayFrom = LocalDate.parse(dateFrom);
+        LocalDate dayTo = LocalDate.parse(dateTo);
+        long fromMs = dayFrom.atTime(LocalTime.of(hourFrom, 0)).atZone(SP_ZONE).toInstant().toEpochMilli();
+        long toMs = dayTo.atTime(LocalTime.of(hourTo, 59, 59)).atZone(SP_ZONE).toInstant().toEpochMilli();
+
+        return predictionAccuracyService.getAccuracy(predictionType, fromMs, toMs, validFilter);
+    }
+
+    @GetMapping("/prediction-heatmap")
+    public Map<String, Object> getPredictionHeatmap(
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(defaultValue = "HORIZON") String predictionType,
+            @RequestParam(required = false) String validFilter) {
+
+        LocalDate now = LocalDate.now(SP_ZONE);
+        int y = year != null ? year : now.getYear();
+        int m = month != null ? month : now.getMonthValue();
+
+        return predictionHeatmapService.getHeatmap(predictionType, y, m, validFilter);
     }
 
     // ─── Dust Redeem ─────────────────────────────────────────────

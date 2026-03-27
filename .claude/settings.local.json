@@ -32,7 +32,9 @@
       "Bash(sed 's/\"\"\"\"$//')",
       "Bash(grep -v \"//\")",
       "Bash(find D:/Projetos/Yacamin/Yacamin-Gabriel/src -name TradingConfig* -type f)",
-      "WebFetch(domain:)"
+      "WebFetch(domain:)",
+      "Bash(find D:ProjetosYacamindocumentos -type f -name *[Rr]afael* -o -name *[Pp]rediction* -o -name *[Hh]orizon*)",
+      "Bash(grep -r \"RESOLVE\\\\|PREDICTION\\\\|HORIZON\" D:ProjetosYacaminYacamin-Amitielsrcmainjavabrcomyacaminamitiel --include=*.java)"
     ]
   }
 }

@@ -16,4 +16,6 @@ public interface SimEventRepository extends MongoRepository<SimEvent, String> {
     List<SimEvent> findByTypeAndTimestampGreaterThanEqual(String type, long timestamp);
 
     List<SimEvent> findByTypeAndAlgorithmAndTimestampGreaterThanEqual(String type, String algorithm, long timestamp);
+
+    List<SimEvent> findByTypeAndTimestampBetweenOrderByTimestampDesc(String type, long from, long to);
 }
