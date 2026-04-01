@@ -523,7 +523,7 @@ public class EventTimelineService {
                 }
                 clobTotalFees += fee;
                 td.put("notional", round4(notional));
-                td.put("feeAmount", round4(fee));
+                td.put("feeAmount", round5(fee));
 
                 if ("BUY".equals(ct.getSide())) {
                     clobTotalBuySize += size;
@@ -642,7 +642,7 @@ public class EventTimelineService {
         pnl.put("clobTotalBuySize", round4(clobTotalBuySize));
         pnl.put("clobTotalSellRevenue", round4(clobTotalSellRevenue));
         pnl.put("clobTotalSellSize", round4(clobTotalSellSize));
-        pnl.put("clobTotalFees", round4(clobTotalFees));
+        pnl.put("clobTotalFees", round5(clobTotalFees));
         pnl.put("redeemPayout", round4(redeemPayout));
         pnl.put("redeemCount", redeemCount);
         pnl.put("expectedRedeemPayout", round4(expectedRedeemPayout));
@@ -672,7 +672,7 @@ public class EventTimelineService {
             double existingSellRevenue = getNumber(fp, "sellRevenue");
             String feesSource = getString(fp, "source");
 
-            boolean feesMatch = valuesMatch(existingFees, round4(clobTotalFees))
+            boolean feesMatch = valuesMatch(existingFees, round5(clobTotalFees))
                     && valuesMatch(existingBuyCost, round4(clobTotalBuyCost))
                     && valuesMatch(existingSellRevenue, round4(clobTotalSellRevenue));
 
@@ -681,8 +681,8 @@ public class EventTimelineService {
             existingCheck.put("feesEventId", existingFeesEvent.getId());
             if (!feesMatch) {
                 List<String> diffs = new ArrayList<>();
-                if (!valuesMatch(existingFees, round4(clobTotalFees)))
-                    diffs.add("totalFees: evento=" + existingFees + " vs calculado=" + round4(clobTotalFees));
+                if (!valuesMatch(existingFees, round5(clobTotalFees)))
+                    diffs.add("totalFees: evento=" + existingFees + " vs calculado=" + round5(clobTotalFees));
                 if (!valuesMatch(existingBuyCost, round4(clobTotalBuyCost)))
                     diffs.add("buyCost: evento=" + existingBuyCost + " vs calculado=" + round4(clobTotalBuyCost));
                 if (!valuesMatch(existingSellRevenue, round4(clobTotalSellRevenue)))
@@ -758,7 +758,7 @@ public class EventTimelineService {
 
         // ─── FEES: criar ou corrigir ───
         Map<String, Object> feesPayload = new LinkedHashMap<>();
-        feesPayload.put("totalFees", round4(totalFees));
+        feesPayload.put("totalFees", round5(totalFees));
         feesPayload.put("clobTradeCount", clobTradeCount);
         feesPayload.put("buyCost", round4(buyCost));
         feesPayload.put("sellRevenue", round4(sellRevenue));
@@ -773,7 +773,7 @@ public class EventTimelineService {
             feesChanged = true;
         } else {
             Map<String, Object> oldPayload = getPayload(existingFees);
-            boolean feesCorrect = valuesMatch(getNumber(oldPayload, "totalFees"), round4(totalFees))
+            boolean feesCorrect = valuesMatch(getNumber(oldPayload, "totalFees"), round5(totalFees))
                     && valuesMatch(getNumber(oldPayload, "buyCost"), round4(buyCost))
                     && valuesMatch(getNumber(oldPayload, "sellRevenue"), round4(sellRevenue));
 
@@ -794,7 +794,7 @@ public class EventTimelineService {
         Map<String, Object> pnlPayload = new LinkedHashMap<>();
         pnlPayload.put("marketUnixTime", marketUnixTime);
         pnlPayload.put("pnlReal", round4(pnlReal));
-        pnlPayload.put("totalFees", round4(totalFees));
+        pnlPayload.put("totalFees", round5(totalFees));
         pnlPayload.put("buyCost", round4(buyCost));
         pnlPayload.put("sellRevenue", round4(sellRevenue));
         pnlPayload.put("redeemPayout", round4(redeemPayout));
@@ -828,7 +828,7 @@ public class EventTimelineService {
         Map<String, Object> reconciledPayload = new LinkedHashMap<>();
         reconciledPayload.put("marketUnixTime", marketUnixTime);
         reconciledPayload.put("pnlReal", round4(pnlReal));
-        reconciledPayload.put("totalFees", round4(totalFees));
+        reconciledPayload.put("totalFees", round5(totalFees));
         reconciledPayload.put("clobTradeCount", clobTradeCount);
         reconciledPayload.put("feesAction", result.get("feesAction"));
         reconciledPayload.put("pnlAction", result.get("pnlAction"));
@@ -896,12 +896,12 @@ public class EventTimelineService {
         }
         result.put("hasDust", hasDustEvent);
 
-        result.put("totalFees", round4(totalFees));
+        result.put("totalFees", round5(totalFees));
         result.put("pnlReal", round4(pnlReal));
         result.put("changed", feesChanged || pnlChanged);
 
         log.info("[EV-ACCEPT] Conciliacao slug={}: fees={} ({}), pnl={} ({})",
-                slug, round4(totalFees), result.get("feesAction"),
+                slug, round5(totalFees), result.get("feesAction"),
                 round4(pnlReal), result.get("pnlAction"));
 
         return result;
@@ -1032,18 +1032,21 @@ public class EventTimelineService {
 
     // ─── Fee calculation (same as VerificationService) ────────────────
 
+    private static final double FEE_RATE = 0.072;
+
     private double calculateCryptoFee(double shares, double price) {
-        double feeRate = 0.25;
-        int exponent = 2;
-        double pq = price * (1.0 - price);
-        double fee = shares * price * feeRate * Math.pow(pq, exponent);
-        fee = Math.round(fee * 10000.0) / 10000.0;
-        return Math.max(fee, 0.0001);
+        double fee = shares * FEE_RATE * price * (1.0 - price);
+        fee = Math.round(fee * 100000.0) / 100000.0;
+        return Math.max(fee, 0.00001);
     }
 
 
     private double round4(double v) {
         return Math.round(v * 10000.0) / 10000.0;
+    }
+
+    private double round5(double v) {
+        return Math.round(v * 100000.0) / 100000.0;
     }
 
     // ─── Market summary (for list) ────────────────────────────────────

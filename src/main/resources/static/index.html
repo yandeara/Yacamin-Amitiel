@@ -2339,7 +2339,7 @@
                         <td>${t.outcome || '--'}</td>
                         <td>${t.traderSide || '--'}</td>
                         <td>${feeBps}</td>
-                        <td style="color:var(--red);">${feeAmt.toFixed(4)}</td>
+                        <td style="color:var(--red);">${feeAmt.toFixed(5)}</td>
                         <td style="font-size:10px;color:var(--text-dim);">${matchStr}</td>
                         <td>${txLink ? `<a href="${txLink}" target="_blank" style="color:var(--accent);font-size:10px;">${txHash}</a>` : txHash}</td>
                     </tr>`;
@@ -2938,7 +2938,7 @@
                     </div>
                     <div class="eh-summary-card" style="border-top:3px solid var(--red);">
                         <div class="eh-summary-label">Fees Total</div>
-                        <div class="eh-summary-value" style="color:var(--red)">-${pnl.clobTotalFees.toFixed(4)}</div>
+                        <div class="eh-summary-value" style="color:var(--red)">-${pnl.clobTotalFees.toFixed(5)}</div>
                     </div>
                 </div>`;
 
@@ -3084,7 +3084,7 @@
                             t.side === ct.side && t.price === ct.price && t.size === ct.size && t.matchTime === ct.matchTime);
                         if (clobTradeDetail) {
                             notional = (clobTradeDetail.notional || 0).toFixed(4);
-                            fee = (clobTradeDetail.feeAmount || 0).toFixed(4);
+                            fee = (clobTradeDetail.feeAmount || 0).toFixed(5);
                         }
                     }
 
@@ -3178,7 +3178,7 @@
                         <td>${(t.notional || 0).toFixed(4)}</td>
                         <td>${t.outcome || '--'}</td>
                         <td>${t.traderSide || '--'}</td>
-                        <td style="color:var(--red);">${(t.feeAmount || 0).toFixed(4)}</td>
+                        <td style="color:var(--red);">${(t.feeAmount || 0).toFixed(5)}</td>
                         <td style="font-size:10px;color:var(--text-dim);">${matchStr}</td>
                         <td>${txLink ? '<a href="' + txLink + '" target="_blank" style="color:var(--accent);font-size:10px;">' + txHash + '</a>' : txHash}</td>
                     </tr>`;
@@ -3245,7 +3245,7 @@
                     actionDesc = 'FEES/PNL existentes tem divergencias. Ao aceitar, os valores serao <strong style="color:var(--orange);">corrigidos</strong> e o evento <strong style="color:#10b981;">RECONCILED</strong> sera gravado.';
                     btnLabel = '&#9998; Corrigir e Conciliar';
                 } else {
-                    actionDesc = 'Serao gravados: <strong style="color:var(--red);">FEES</strong> (' + pnl.clobTotalFees.toFixed(4) + ' USDC), <strong style="color:#22d3ee;">PNL</strong> (' + (pnl.totalUsdcFlow >= 0 ? '+' : '') + pnl.totalUsdcFlow.toFixed(4) + ' USDC) e <strong style="color:#10b981;">RECONCILED</strong>.';
+                    actionDesc = 'Serao gravados: <strong style="color:var(--red);">FEES</strong> (' + pnl.clobTotalFees.toFixed(5) + ' USDC), <strong style="color:#22d3ee;">PNL</strong> (' + (pnl.totalUsdcFlow >= 0 ? '+' : '') + pnl.totalUsdcFlow.toFixed(4) + ' USDC) e <strong style="color:#10b981;">RECONCILED</strong>.';
                     btnLabel = '&#10003; Aceitar e Gravar';
                 }
 
@@ -3728,7 +3728,7 @@
                 status.style.color = 'var(--green)';
                 const feesAct = result.feesAction === 'CREATED' ? 'criado' : result.feesAction === 'CORRECTED' ? 'corrigido' : 'ok';
                 const pnlAct = result.pnlAction === 'CREATED' ? 'criado' : result.pnlAction === 'CORRECTED' ? 'corrigido' : 'ok';
-                let statusMsg = `FEES: ${feesAct} (${result.totalFees.toFixed(4)}), PNL: ${pnlAct} (${result.pnlReal >= 0 ? '+' : ''}${result.pnlReal.toFixed(4)} USDC)`;
+                let statusMsg = `FEES: ${feesAct} (${result.totalFees.toFixed(5)}), PNL: ${pnlAct} (${result.pnlReal >= 0 ? '+' : ''}${result.pnlReal.toFixed(4)} USDC)`;
                 if (result.hasDust) {
                     statusMsg += ` | DUST: ${result.dustAmount.toFixed(4)} USDC`;
                 }
@@ -4192,7 +4192,7 @@
             if (data.totalFees != null) {
                 html += `<div class="eh-summary-card" style="border-top:3px solid var(--red);">
                     <div class="eh-summary-label">Fees</div>
-                    <div class="eh-summary-value" style="color:var(--red)">-${data.totalFees.toFixed(4)}</div>
+                    <div class="eh-summary-value" style="color:var(--red)">-${data.totalFees.toFixed(5)}</div>
                 </div>`;
             }
 

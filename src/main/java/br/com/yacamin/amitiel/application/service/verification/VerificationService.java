@@ -184,15 +184,15 @@ public class VerificationService {
                 double notional = price * size;
 
                 // Fee real da Polymarket (crypto):
-                //   fee = C * p * feeRate * (p * (1-p))^exponent
-                //   feeRate = 0.25, exponent = 2
+                //   fee = C * feeRate * p * (1-p)
+                //   feeRate = 0.072 (Crypto category)
                 // Fees only apply to takers. Makers have 0 fee (+ rebates).
                 double fee = 0;
                 if (!"MAKER".equals(t.getTraderSide())) {
                     fee = calculateCryptoFee(size, price);
                 }
                 clobTotalFees += fee;
-                trade.put("feeAmount", round4(fee));
+                trade.put("feeAmount", round5(fee));
 
                 if ("BUY".equals(t.getSide())) {
                     clobTotalBuySize += size;
@@ -234,7 +234,7 @@ public class VerificationService {
         result.put("clobTotalSellSize", round4(clobTotalSellSize));
         result.put("clobTotalBuyCost", round4(clobTotalBuyCost));
         result.put("clobTotalSellRevenue", round4(clobTotalSellRevenue));
-        result.put("clobTotalFees", round4(clobTotalFees));
+        result.put("clobTotalFees", round5(clobTotalFees));
         result.put("redeemPayout", round4(redeemPayout));
         result.put("redeemCount", redeemCount);
         result.put("totalUsdcFlow", round4(totalUsdcFlow));
@@ -307,22 +307,23 @@ public class VerificationService {
 
     /**
      * Calcula fee real da Polymarket para mercados crypto.
-     * Formula: fee = C * p * feeRate * (p * (1-p))^exponent
-     * Crypto: feeRate = 0.25, exponent = 2
-     * Max efetivo ~1.56% no midpoint (p=0.50), quase zero nos extremos.
-     * Rounded to 4 decimal places, minimum 0.0001 USDC.
+     * Formula: fee = C * feeRate * p * (1 - p)
+     * Crypto category: feeRate = 0.072
+     * Rounded to 5 decimal places, minimum 0.00001 USDC.
      */
+    private static final double FEE_RATE = 0.072;
+
     private double calculateCryptoFee(double shares, double price) {
-        double feeRate = 0.25;
-        int exponent = 2;
-        double pq = price * (1.0 - price); // p * (1-p)
-        double fee = shares * price * feeRate * Math.pow(pq, exponent);
-        // Round to 4 decimals, min 0.0001
-        fee = Math.round(fee * 10000.0) / 10000.0;
-        return Math.max(fee, 0.0001);
+        double fee = shares * FEE_RATE * price * (1.0 - price);
+        fee = Math.round(fee * 100000.0) / 100000.0;
+        return Math.max(fee, 0.00001);
     }
 
     private double round4(double v) {
         return Math.round(v * 10000.0) / 10000.0;
+    }
+
+    private double round5(double v) {
+        return Math.round(v * 100000.0) / 100000.0;
     }
 }
