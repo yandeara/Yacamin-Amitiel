@@ -782,6 +782,174 @@
             font-size: 18px;
             font-weight: 700;
         }
+
+        /* ── Reconciliation Live Page ─────────────────────── */
+        .rl-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+            padding: 20px 24px;
+        }
+
+        .rl-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: border-color 0.2s;
+        }
+
+        .rl-card.state-open { border-color: var(--border); }
+        .rl-card.state-resolving { border-color: var(--yellow); }
+        .rl-card.state-resolved-ok { border-color: var(--green); }
+        .rl-card.state-resolved-drift { border-color: var(--red); }
+        .rl-card.state-resolved-abandoned { border-color: var(--text-dim); opacity: 0.65; }
+
+        .rl-card-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .rl-card-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.3;
+        }
+
+        .rl-card-time {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+
+        .rl-state-badge {
+            font-size: 9px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            height: fit-content;
+        }
+
+        .rl-state-badge.open { background: rgba(100,116,139,0.15); color: var(--text-dim); }
+        .rl-state-badge.resolving { background: rgba(234,179,8,0.15); color: var(--yellow); }
+        .rl-state-badge.resolved { background: rgba(34,197,94,0.15); color: var(--green); }
+        .rl-state-badge.abandoned { background: rgba(100,116,139,0.15); color: var(--text-dim); }
+
+        .rl-countdown {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent);
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            padding: 8px 0;
+        }
+
+        .rl-outcome-line {
+            font-size: 13px;
+            font-weight: 700;
+            text-align: center;
+            padding: 6px 0;
+            letter-spacing: 1px;
+        }
+
+        .rl-outcome-up { color: var(--green); }
+        .rl-outcome-down { color: var(--red); }
+
+        .rl-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 10px 0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .rl-metric {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .rl-metric-label {
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-dim);
+        }
+
+        .rl-metric-value {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .rl-footer {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .rl-pnl-line {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+        }
+
+        .rl-pnl-label { color: var(--text-dim); }
+        .rl-pnl-value { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+        .rl-divergence-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 4px;
+            border-top: 1px dashed var(--border);
+            margin-top: 4px;
+        }
+
+        .rl-divergence-label {
+            color: var(--text);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .rl-divergence-value {
+            font-size: 16px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .rl-divergence-value.ok { color: var(--green); }
+        .rl-divergence-value.drift { color: var(--red); }
+
+        .rl-note {
+            font-size: 9px;
+            color: var(--text-dim);
+            text-align: center;
+            font-style: italic;
+            padding: 8px 0;
+        }
+
+        .rl-empty {
+            text-align: center;
+            color: var(--text-dim);
+            padding: 40px;
+            font-size: 12px;
+            grid-column: 1 / -1;
+        }
     </style>
 </head>
 <body>
@@ -834,6 +1002,10 @@
             <button class="nav-item" data-page="events" onclick="navigate('events')">
                 <span class="nav-icon">&#9201;</span>
                 Timeline Eventos
+            </button>
+            <button class="nav-item" data-page="reconciliation-live" onclick="navigate('reconciliation-live')">
+                <span class="nav-icon">&#128225;</span>
+                Reconciliation Live
             </button>
             <div class="nav-section">Rafael</div>
             <button class="nav-item" data-page="prediction-accuracy" onclick="navigate('prediction-accuracy')">
@@ -1235,6 +1407,20 @@
             </div>
         </div>
 
+        <div class="page" id="page-reconciliation-live">
+            <div class="page-header">
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <span class="page-title">Reconciliation Live</span>
+                    <span id="rl-status" style="font-size:11px;color:var(--text-dim);"></span>
+                </div>
+            </div>
+            <div class="page-body" style="padding:0;">
+                <div id="rl-grid" class="rl-grid">
+                    <div class="rl-empty">Aguardando bootstrap do LiveMarketStateService...</div>
+                </div>
+            </div>
+        </div>
+
         <div class="page" id="page-events">
             <div class="page-header" style="flex-direction:column;align-items:flex-start;">
                 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
@@ -1518,6 +1704,11 @@
 
             if (page === 'verification') {
                 initVfFilters();
+                return;
+            }
+
+            if (page === 'reconciliation-live') {
+                fetchReconciliationLive();
                 return;
             }
 
@@ -5355,6 +5546,198 @@
             container.innerHTML = html;
         }
 
+        /* ── Reconciliation Live Page ───────────────────── */
+        let rlServerTime = 0;
+        let rlServerTimeReceivedAt = 0;
+        let rlMarkets = [];
+
+        async function fetchReconciliationLive() {
+            try {
+                const res = await fetch('/api/dashboard/reconciliation/live');
+                if (res.status === 401) { window.location.href = '/login'; return; }
+                if (!res.ok) throw new Error(res.status);
+                const data = await res.json();
+                rlServerTime = data.serverTime || 0;
+                rlServerTimeReceivedAt = Date.now();
+                rlMarkets = data.markets || [];
+                renderReconciliationCards();
+            } catch (e) {
+                console.error('Fetch reconciliation/live failed:', e);
+            }
+        }
+
+        function renderReconciliationCards() {
+            const grid = document.getElementById('rl-grid');
+            if (!grid) return;
+
+            if (!rlMarkets || rlMarkets.length === 0) {
+                grid.innerHTML = '<div class="rl-empty">Nenhum market ativo no momento.</div>';
+                return;
+            }
+
+            const now = rlServerTime + Math.floor((Date.now() - rlServerTimeReceivedAt) / 1000);
+            const html = rlMarkets.map(m => rlRenderCard(m, now)).join('');
+            grid.innerHTML = html;
+
+            const count = rlMarkets.length;
+            const statusEl = document.getElementById('rl-status');
+            if (statusEl) statusEl.textContent = count + ' market' + (count !== 1 ? 's' : '') + ' monitorando';
+        }
+
+        function rlRenderCard(m, nowEpoch) {
+            const state = m.state || 'OPEN';
+            const remaining = Math.max(0, (m.endUnixTime || 0) - nowEpoch);
+            const abandoned = rlIsAbandoned(m);
+            const cardClass = rlCardClass(m, abandoned);
+            const stateBadge = rlStateBadge(state, abandoned);
+            const stateContent = rlStateContent(m, state, remaining);
+            const metricsBlock = rlMetricsBlock(m, state, abandoned);
+            const time = rlFormatTimeRange(m.marketUnixTime, m.endUnixTime);
+            const name = rlEscapeHtml(m.displayName || m.slug || '');
+
+            return `
+                <div class="rl-card ${cardClass}">
+                    <div class="rl-card-head">
+                        <div>
+                            <div class="rl-card-title">${name}</div>
+                            <div class="rl-card-time">${time}</div>
+                        </div>
+                        ${stateBadge}
+                    </div>
+                    ${stateContent}
+                    ${metricsBlock}
+                </div>
+            `;
+        }
+
+        function rlIsAbandoned(m) {
+            // Card em RESOLVED mas sem pnlGabriel/divergence — foi abandonado
+            // pelo backend porque o proximo resolve chegou antes do Gabriel
+            // terminar o PNL desse market.
+            return m.state === 'RESOLVED' && (m.pnlGabriel == null || m.divergence == null);
+        }
+
+        function rlCardClass(m, abandoned) {
+            if (m.state === 'OPEN') return 'state-open';
+            if (m.state === 'RESOLVING') return 'state-resolving';
+            if (m.state === 'RESOLVED') {
+                if (abandoned) return 'state-resolved-abandoned';
+                const d = Math.abs(m.divergence);
+                return d < 0.01 ? 'state-resolved-ok' : 'state-resolved-drift';
+            }
+            return 'state-open';
+        }
+
+        function rlStateBadge(state, abandoned) {
+            if (state === 'OPEN') return '<span class="rl-state-badge open">Aberto</span>';
+            if (state === 'RESOLVING') return '<span class="rl-state-badge resolving">Reconciliando</span>';
+            if (state === 'RESOLVED') {
+                if (abandoned) return '<span class="rl-state-badge abandoned">Sem PnL</span>';
+                return '<span class="rl-state-badge resolved">Resolvido</span>';
+            }
+            return '';
+        }
+
+        function rlStateContent(m, state, remaining) {
+            if (state === 'OPEN') {
+                return '<div class="rl-countdown">' + rlFormatCountdown(remaining) + '</div>';
+            }
+            if (state === 'RESOLVING' || state === 'RESOLVED') {
+                const outcome = (m.winningOutcome || '').toString();
+                const cls = outcome.toUpperCase() === 'UP' ? 'rl-outcome-up' : 'rl-outcome-down';
+                return '<div class="rl-outcome-line ' + cls + '">WINNER: ' + rlEscapeHtml(outcome.toUpperCase()) + '</div>';
+            }
+            return '';
+        }
+
+        function rlMetricsBlock(m, state, abandoned) {
+            if (state === 'OPEN') {
+                return '<div class="rl-note">Aguardando resolve do bloco</div>';
+            }
+            if (state === 'RESOLVING') {
+                return '<div class="rl-note">Aguardando Gabriel gravar PNL + CLOB API responder</div>';
+            }
+            if (abandoned) {
+                return '<div class="rl-note">Reconciliation abandonada — proximo resolve chegou antes do Gabriel gravar o PNL</div>';
+            }
+
+            // RESOLVED — mostra os numeros
+            const buyCost = (m.buyCost != null) ? m.buyCost.toFixed(4) : '—';
+            const sellRevenue = (m.sellRevenue != null) ? m.sellRevenue.toFixed(4) : '—';
+            const totalFees = (m.totalFees != null) ? m.totalFees.toFixed(4) : '—';
+            const redeemPayout = (m.redeemPayout != null) ? m.redeemPayout.toFixed(4) : '—';
+            const pnlGabriel = (m.pnlGabriel != null) ? m.pnlGabriel.toFixed(4) : '—';
+
+            let walletNet = '—';
+            if (m.sellRevenue != null && m.redeemPayout != null && m.buyCost != null && m.totalFees != null) {
+                const net = m.sellRevenue + m.redeemPayout - m.buyCost - m.totalFees;
+                walletNet = net.toFixed(4);
+            }
+
+            const divergence = m.divergence;
+            const divClass = (divergence != null && Math.abs(divergence) < 0.01) ? 'ok' : 'drift';
+            const divFormatted = (divergence != null) ? (divergence >= 0 ? '+' : '') + divergence.toFixed(4) : '—';
+
+            return `
+                <div class="rl-metrics">
+                    <div class="rl-metric">
+                        <div class="rl-metric-label">Outflow (buy)</div>
+                        <div class="rl-metric-value">${buyCost}</div>
+                    </div>
+                    <div class="rl-metric">
+                        <div class="rl-metric-label">Inflow (sell)</div>
+                        <div class="rl-metric-value">${sellRevenue}</div>
+                    </div>
+                    <div class="rl-metric">
+                        <div class="rl-metric-label">Fees</div>
+                        <div class="rl-metric-value">${totalFees}</div>
+                    </div>
+                    <div class="rl-metric">
+                        <div class="rl-metric-label">Redeem</div>
+                        <div class="rl-metric-value">${redeemPayout}</div>
+                    </div>
+                </div>
+                <div class="rl-footer">
+                    <div class="rl-pnl-line">
+                        <span class="rl-pnl-label">PnL Gabriel</span>
+                        <span class="rl-pnl-value">${pnlGabriel}</span>
+                    </div>
+                    <div class="rl-pnl-line">
+                        <span class="rl-pnl-label">Wallet Net</span>
+                        <span class="rl-pnl-value">${walletNet}</span>
+                    </div>
+                    <div class="rl-divergence-line">
+                        <span class="rl-divergence-label">Divergencia</span>
+                        <span class="rl-divergence-value ${divClass}">${divFormatted}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function rlFormatCountdown(secondsRemaining) {
+            if (secondsRemaining <= 0) return '0:00';
+            const m = Math.floor(secondsRemaining / 60);
+            const s = secondsRemaining % 60;
+            return m + ':' + String(s).padStart(2, '0');
+        }
+
+        function rlFormatTimeRange(startUnix, endUnix) {
+            if (!startUnix) return '';
+            const fmt = (unix) => {
+                const d = new Date(unix * 1000);
+                const h = String(d.getHours()).padStart(2, '0');
+                const mm = String(d.getMinutes()).padStart(2, '0');
+                return h + ':' + mm;
+            };
+            if (endUnix) return fmt(startUnix) + ' — ' + fmt(endUnix);
+            return fmt(startUnix);
+        }
+
+        function rlEscapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
         /* ── Init ────────────────────────────────────── */
         Promise.all([loadMarketGroups(), loadAlgorithms()]).then(() => fetchSimPnl());
 
@@ -5362,6 +5745,11 @@
         setInterval(() => {
             if (currentPage === 'sim-pnl') fetchSimPnl();
         }, 30000);
+
+        // Auto-refresh Reconciliation Live every 1 second when on that page
+        setInterval(() => {
+            if (currentPage === 'reconciliation-live') fetchReconciliationLive();
+        }, 1000);
     </script>
 </body>
 </html>

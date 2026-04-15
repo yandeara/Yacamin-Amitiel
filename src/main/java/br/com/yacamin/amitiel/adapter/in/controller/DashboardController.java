@@ -8,6 +8,7 @@ import br.com.yacamin.amitiel.application.service.prediction.PredictionAccuracyS
 import br.com.yacamin.amitiel.application.service.prediction.PredictionHeatmapService;
 import br.com.yacamin.amitiel.application.service.MarketGroupQueryService;
 import br.com.yacamin.amitiel.application.service.AlgorithmQueryService;
+import br.com.yacamin.amitiel.application.service.reconciliation.LiveMarketStateService;
 import br.com.yacamin.amitiel.application.service.verification.VerificationService;
 import br.com.yacamin.amitiel.application.service.wallet.WalletBalanceService;
 import br.com.yacamin.amitiel.application.service.wallet.AutoSnapshotScheduler;
@@ -46,6 +47,7 @@ public class DashboardController {
     private final AlgorithmQueryService algorithmQueryService;
     private final PredictionAccuracyService predictionAccuracyService;
     private final PredictionHeatmapService predictionHeatmapService;
+    private final LiveMarketStateService liveMarketStateService;
 
     @GetMapping("/market-groups")
     public List<Map<String, Object>> getMarketGroups() {
@@ -133,6 +135,16 @@ public class DashboardController {
     @PostMapping("/verification/verify")
     public Map<String, Object> verifyClobTrades(@RequestParam long marketUnixTime) {
         return verificationService.verifyClobTrades(marketUnixTime);
+    }
+
+    // ─── Reconciliation Live ─────────────────────────────────────
+
+    @GetMapping("/reconciliation/live")
+    public Map<String, Object> getReconciliationLive() {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("serverTime", java.time.Instant.now().getEpochSecond());
+        result.put("markets", liveMarketStateService.getCards());
+        return result;
     }
 
     @GetMapping("/events/markets")
