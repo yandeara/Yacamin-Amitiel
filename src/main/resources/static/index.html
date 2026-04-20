@@ -975,11 +975,11 @@
             </button>
             <button class="nav-item" data-page="ev-heatmap" onclick="navigate('ev-heatmap')">
                 <span class="nav-icon">&#9638;</span>
-                Heatmap
+                Heatmap PnL
             </button>
-            <button class="nav-item" data-page="heatmap" onclick="navigate('heatmap')">
+            <button class="nav-item" data-page="entry-heatmap" onclick="navigate('entry-heatmap')">
                 <span class="nav-icon">&#9638;</span>
-                Heatmap Old
+                Heatmap Entradas
             </button>
             <button class="nav-item" data-page="algo-compare" onclick="navigate('algo-compare')">
                 <span class="nav-icon">&#9878;</span>
@@ -1094,46 +1094,42 @@
             </div>
         </div>
 
-        <!-- Page: Heatmap -->
-        <div class="page" id="page-heatmap">
+        <!-- Page: Heatmap Entradas (preco medio por share na entrada) -->
+        <div class="page" id="page-entry-heatmap">
             <div class="page-header">
                 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-                    <span class="page-title">Heatmap</span>
-                    <div class="mode-toggle" id="heatmap-source-selector"></div>
-                    <div class="mode-toggle" id="heatmap-metric-selector">
-                        <button class="mode-btn active" onclick="toggleHeatmapMetric('pnl', this)">PnL</button>
-                        <button class="mode-btn" onclick="toggleHeatmapMetric('flips', this)">Flips</button>
-                    </div>
-                    <select id="mg-heatmap" class="mg-selector heatmap-input" style="width:auto;min-width:100px;" onchange="fetchHeatmap()"></select>
+                    <span class="page-title">Heatmap Entradas (Preco Medio por Share)</span>
+                    <div class="mode-toggle" id="ephm-source-selector"></div>
+                    <select id="mg-ephm" class="mg-selector heatmap-input" style="width:auto;min-width:100px;" onchange="fetchEntryHeatmap()"></select>
                 </div>
                 <div class="heatmap-filters">
                     <div class="heatmap-filter-group">
                         <label>Mes/Ano:</label>
-                        <select id="heatmap-month"></select>
-                        <select id="heatmap-year"></select>
-                        <button class="heatmap-btn" onclick="fetchHeatmap()">Buscar</button>
+                        <select id="ephm-month"></select>
+                        <select id="ephm-year"></select>
+                        <button class="heatmap-btn" onclick="fetchEntryHeatmap()">Buscar</button>
                     </div>
                     <div class="heatmap-filter-group">
                         <label>Horas:</label>
-                        <select id="heatmap-hour-from"></select>
+                        <select id="ephm-hour-from"></select>
                         <span>a</span>
-                        <select id="heatmap-hour-to"></select>
+                        <select id="ephm-hour-to"></select>
                     </div>
                     <div class="heatmap-filter-group">
                         <label>Dias:</label>
-                        <input type="number" id="heatmap-day-from" min="1" max="31" value="1" class="heatmap-input">
+                        <input type="number" id="ephm-day-from" min="1" max="31" value="1" class="heatmap-input">
                         <span>a</span>
-                        <input type="number" id="heatmap-day-to" min="1" max="31" value="31" class="heatmap-input">
+                        <input type="number" id="ephm-day-to" min="1" max="31" value="31" class="heatmap-input">
                     </div>
-                    <button class="heatmap-btn" onclick="applyHeatmapFilters()">Filtrar</button>
-                    <button class="heatmap-btn heatmap-btn-reset" onclick="resetHeatmapFilters()">Reset</button>
+                    <button class="heatmap-btn" onclick="renderEntryHeatmap()">Filtrar</button>
+                    <button class="heatmap-btn heatmap-btn-reset" onclick="resetEphmFilters()">Reset</button>
                 </div>
             </div>
             <div class="page-body" style="padding:12px 16px;overflow-x:auto;">
-                <div id="heatmap-container">
+                <div id="ephm-container">
                     <div class="empty-state">
                         <h2>Selecione um periodo</h2>
-                        <p>Escolha mes, ano e metricas para visualizar.</p>
+                        <p>Escolha mes, ano e fontes para visualizar o preco medio de entrada.</p>
                     </div>
                 </div>
             </div>
@@ -1520,29 +1516,6 @@
                 if (algorithms.length > 0) pnlHistAlgo = algorithms[0].name;
             }
 
-            // Heatmap source selector
-            const heatmapSrcSel = document.getElementById('heatmap-source-selector');
-            if (heatmapSrcSel) {
-                heatmapSrcSel.innerHTML = '';
-                algorithms.forEach(a => {
-                    const btn = document.createElement('button');
-                    btn.className = 'mode-btn';
-                    btn.dataset.source = a.name;
-                    btn.style.borderLeft = '3px solid ' + algoColor(a.name);
-                    btn.textContent = a.name;
-                    btn.onclick = function() { toggleHeatmapSource(a.name, this); };
-                    heatmapSrcSel.appendChild(btn);
-                });
-                // REAL button
-                const realBtn = document.createElement('button');
-                realBtn.className = 'mode-btn active';
-                realBtn.dataset.source = 'REAL';
-                realBtn.style.borderLeft = '3px solid var(--green)';
-                realBtn.textContent = 'REAL';
-                realBtn.onclick = function() { toggleHeatmapSource('REAL', this); };
-                heatmapSrcSel.appendChild(realBtn);
-            }
-
             // Event Heatmap source selector
             const evhmSrcSel = document.getElementById('evhm-source-selector');
             if (evhmSrcSel) {
@@ -1566,6 +1539,31 @@
                 // Update default active source
                 if (algorithms.length > 0) {
                     evhmActiveSources = new Set([algorithms[0].name]);
+                }
+            }
+
+            // Entry Price Heatmap source selector
+            const ephmSrcSel = document.getElementById('ephm-source-selector');
+            if (ephmSrcSel) {
+                ephmSrcSel.innerHTML = '';
+                algorithms.forEach((a, i) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'mode-btn' + (i === 0 ? ' active' : '');
+                    btn.dataset.source = a.name;
+                    btn.style.borderLeft = '3px solid ' + algoColor(a.name);
+                    btn.textContent = a.name;
+                    btn.onclick = function() { toggleEphmSource(a.name, this); };
+                    ephmSrcSel.appendChild(btn);
+                });
+                const realBtn = document.createElement('button');
+                realBtn.className = 'mode-btn';
+                realBtn.dataset.source = 'REAL';
+                realBtn.style.borderLeft = '3px solid var(--green)';
+                realBtn.textContent = 'REAL';
+                realBtn.onclick = function() { toggleEphmSource('REAL', this); };
+                ephmSrcSel.appendChild(realBtn);
+                if (algorithms.length > 0) {
+                    ephmActiveSources = new Set([algorithms[0].name]);
                 }
             }
 
@@ -1686,9 +1684,9 @@
                 return;
             }
 
-            if (page === 'heatmap') {
-                initHeatmapFilters();
-                fetchHeatmap();
+            if (page === 'entry-heatmap') {
+                initEphmFilters();
+                fetchEntryHeatmap();
                 return;
             }
 
@@ -1822,301 +1820,9 @@
             container.innerHTML = html;
         }
 
-        /* ── Heatmap ────────────────────────────────────── */
-        let heatmapSources = {};
-        let heatmapActiveSources = new Set(['REAL']);
-        let heatmapFiltersInitialized = false;
-        let heatmapMetrics = new Set(['pnl']);
-
+        /* ── Shared heatmap helpers ─────────────────────── */
         function getSourceColor(name) { return algoColor(name); }
         function getSourceShort(name) { return algoShort(name); }
-
-        function toggleHeatmapSource(source, btn) {
-            if (heatmapActiveSources.has(source)) {
-                if (heatmapActiveSources.size <= 1) return;
-                heatmapActiveSources.delete(source);
-                btn.classList.remove('active');
-            } else {
-                heatmapActiveSources.add(source);
-                btn.classList.add('active');
-            }
-            fetchHeatmap();
-        }
-
-        function toggleHeatmapMetric(metric, btn) {
-            if (heatmapMetrics.has(metric)) {
-                if (heatmapMetrics.size <= 1) return;
-                heatmapMetrics.delete(metric);
-                btn.classList.remove('active');
-            } else {
-                heatmapMetrics.add(metric);
-                btn.classList.add('active');
-            }
-            if (Object.keys(heatmapSources).length > 0) renderHeatmap();
-        }
-
-        function initHeatmapFilters() {
-            if (heatmapFiltersInitialized) return;
-            heatmapFiltersInitialized = true;
-
-            const monthSel = document.getElementById('heatmap-month');
-            const yearSel = document.getElementById('heatmap-year');
-            const hourFrom = document.getElementById('heatmap-hour-from');
-            const hourTo = document.getElementById('heatmap-hour-to');
-
-            const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-            meses.forEach((m, i) => {
-                const opt = document.createElement('option');
-                opt.value = i + 1;
-                opt.textContent = m;
-                monthSel.appendChild(opt);
-            });
-
-            const now = new Date();
-            for (let y = now.getFullYear(); y >= now.getFullYear() - 2; y--) {
-                const opt = document.createElement('option');
-                opt.value = y;
-                opt.textContent = y;
-                yearSel.appendChild(opt);
-            }
-
-            for (let h = 0; h < 24; h++) {
-                const label = String(h).padStart(2, '0') + ':00';
-                const optFrom = document.createElement('option');
-                optFrom.value = h;
-                optFrom.textContent = label;
-                hourFrom.appendChild(optFrom);
-
-                const optTo = document.createElement('option');
-                optTo.value = h;
-                optTo.textContent = label;
-                hourTo.appendChild(optTo);
-            }
-
-            monthSel.value = now.getMonth() + 1;
-            yearSel.value = now.getFullYear();
-            hourFrom.value = 0;
-            hourTo.value = 23;
-        }
-
-        async function fetchHeatmap() {
-            const year = document.getElementById('heatmap-year').value;
-            const month = document.getElementById('heatmap-month').value;
-            const container = document.getElementById('heatmap-container');
-
-            container.innerHTML = '<div class="empty-state"><h2>Carregando...</h2></div>';
-
-            try {
-                const fetches = [];
-                const sourceKeys = [];
-
-                for (const src of heatmapActiveSources) {
-                    const mode = src === 'REAL' ? 'real' : 'sim';
-                    const algoParam = src !== 'REAL' ? '&algorithm=' + src : '';
-                    fetches.push(fetch(`/api/dashboard/heatmap?year=${year}&month=${month}&mode=${mode}${algoParam}${mgParam('mg-heatmap')}`));
-                    sourceKeys.push(src);
-                }
-
-                const responses = await Promise.all(fetches);
-                heatmapSources = {};
-
-                for (let i = 0; i < responses.length; i++) {
-                    if (responses[i].status === 401) { window.location.href = '/login'; return; }
-                    if (!responses[i].ok) throw new Error(responses[i].status);
-                    heatmapSources[sourceKeys[i]] = await responses[i].json();
-                }
-
-                const firstData = heatmapSources[sourceKeys[0]];
-                if (firstData) {
-                    document.getElementById('heatmap-day-to').value = firstData.daysInMonth;
-                    document.getElementById('heatmap-day-to').max = firstData.daysInMonth;
-                }
-
-                renderHeatmap();
-            } catch (e) {
-                console.error('Fetch heatmap failed:', e);
-                container.innerHTML = '<div class="empty-state"><h2>Erro ao carregar</h2><p>' + e.message + '</p></div>';
-            }
-        }
-
-        function applyHeatmapFilters() {
-            if (Object.keys(heatmapSources).length > 0) renderHeatmap();
-        }
-
-        function resetHeatmapFilters() {
-            const firstData = Object.values(heatmapSources)[0];
-            if (!firstData) return;
-            document.getElementById('heatmap-hour-from').value = 0;
-            document.getElementById('heatmap-hour-to').value = 23;
-            document.getElementById('heatmap-day-from').value = 1;
-            document.getElementById('heatmap-day-to').value = firstData.daysInMonth;
-            renderHeatmap();
-        }
-
-        function renderHeatmap() {
-            const container = document.getElementById('heatmap-container');
-            const sources = Object.keys(heatmapSources);
-            if (sources.length === 0) {
-                container.innerHTML = '<div class="empty-state"><h2>Sem dados</h2></div>';
-                return;
-            }
-
-            const firstData = heatmapSources[sources[0]];
-            const multiSource = sources.length > 1;
-
-            const hourFrom = parseInt(document.getElementById('heatmap-hour-from').value);
-            const hourTo = parseInt(document.getElementById('heatmap-hour-to').value);
-            const dayFrom = parseInt(document.getElementById('heatmap-day-from').value);
-            const dayTo = Math.min(parseInt(document.getElementById('heatmap-day-to').value), firstData.daysInMonth);
-
-            const hours = [];
-            for (let h = hourFrom; h <= hourTo; h++) hours.push(h);
-            const days = [];
-            for (let d = dayFrom; d <= dayTo; d++) days.push(d);
-
-            const showPnl = heatmapMetrics.has('pnl');
-            const showFlips = heatmapMetrics.has('flips');
-
-            const meses = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-            const monthLabel = meses[firstData.month] + ' ' + firstData.year;
-
-            let html = `<div class="heatmap-summary">`;
-            for (const src of sources) {
-                const sd = heatmapSources[src];
-                const color = getSourceColor(src) || 'var(--text)';
-                if (showPnl && sd.pnl) {
-                    const t = sd.pnl.totals;
-                    html += `<div class="heatmap-summary-card" style="border-top:3px solid ${color};">
-                        <div class="heatmap-summary-label">${src} PnL (${monthLabel})</div>
-                        <div class="heatmap-summary-value ${pnlCellClass(t.total)}">${t.total >= 0 ? '+' : ''}${Number(t.total).toFixed(4)}</div>
-                    </div>
-                    <div class="heatmap-summary-card" style="border-top:3px solid ${color};">
-                        <div class="heatmap-summary-label">${src} Trades</div>
-                        <div class="heatmap-summary-value">${t.trades}</div>
-                    </div>`;
-                }
-                if (showFlips && sd.flips) {
-                    const t = sd.flips.totals;
-                    html += `<div class="heatmap-summary-card" style="border-top:3px solid ${color};">
-                        <div class="heatmap-summary-label">${src} Max Flips</div>
-                        <div class="heatmap-summary-value" style="color:${t.maxFlips >= 4 ? 'var(--red)' : 'var(--text)'}">${t.maxFlips}</div>
-                    </div>`;
-                }
-            }
-            html += `</div>`;
-
-            // Table
-            html += '<table class="heatmap-table"><thead><tr>';
-            html += '<th class="heatmap-hour-header">Hora</th>';
-            for (const d of days) html += `<th>D${d}</th>`;
-            html += '<th>Total</th></tr></thead><tbody>';
-
-            const hourPnlSums = {};
-            for (const src of sources) hourPnlSums[src] = {};
-
-            for (const h of hours) {
-                const hourLabel = String(h).padStart(2, '0') + ':00-' + String(h).padStart(2, '0') + ':59';
-                html += `<tr><td class="heatmap-hour-col">${hourLabel}</td>`;
-
-                for (const src of sources) hourPnlSums[src][h] = 0;
-
-                for (const d of days) {
-                    const hs = String(h), ds = String(d);
-                    const parts = [];
-                    const tooltipParts = [];
-
-                    for (const src of sources) {
-                        const sd = heatmapSources[src];
-                        const pnlData = sd.pnl ? sd.pnl.data : {};
-                        const flipData = sd.flips ? sd.flips.data : {};
-
-                        const pCell = pnlData[hs] ? pnlData[hs][ds] : null;
-                        const fCell = flipData[hs] ? flipData[hs][ds] : null;
-
-                        const srcLabel = multiSource ? `<span style="color:${getSourceColor(src)};font-size:9px;font-weight:700;">${getSourceShort(src)}</span> ` : '';
-                        const srcParts = [];
-
-                        if (showPnl && pCell) {
-                            hourPnlSums[src][h] += pCell.pnl;
-                            srcParts.push(`<span class="${pnlCellClass(pCell.pnl)}">${pCell.pnl >= 0 ? '+' : ''}${pCell.pnl.toFixed(4)}</span>`);
-                            tooltipParts.push(`${src} PnL: ${pCell.pnl.toFixed(4)} | T: ${pCell.trades} | WR: ${pCell.trades > 0 ? Math.round(pCell.wins/pCell.trades*100) : 0}%`);
-                        }
-                        if (showFlips && fCell) {
-                            const fCls = fCell.flips >= 4 ? 'heatmap-cell-neg' : '';
-                            srcParts.push(`<span class="${fCls}" style="font-size:9px">${fCell.flips}f</span>`);
-                        }
-
-                        if (srcParts.length > 0) {
-                            parts.push(srcLabel + srcParts.join(' '));
-                        }
-                    }
-
-                    if (parts.length > 0) {
-                        html += `<td title="${tooltipParts.join(' | ')}" style="line-height:1.4">${parts.join('<br>')}</td>`;
-                    } else {
-                        html += '<td class="heatmap-cell-zero">-</td>';
-                    }
-                }
-
-                // Hour total
-                let hourTotalParts = [];
-                for (const src of sources) {
-                    const srcLabel = multiSource ? `<span style="color:${getSourceColor(src)};font-size:9px;font-weight:700;">${getSourceShort(src)}</span> ` : '';
-                    const srcParts = [];
-                    const sd = heatmapSources[src];
-
-                    if (showPnl) {
-                        const hSum = hourPnlSums[src][h];
-                        srcParts.push(`<span class="${pnlCellClass(hSum)}">${hSum >= 0 ? '+' : ''}${hSum.toFixed(4)}</span>`);
-                    }
-                    const hft = sd.flips && sd.flips.totals.byHour ? sd.flips.totals.byHour[String(h)] : null;
-                    if (showFlips && hft) srcParts.push(`<span style="font-size:9px">${hft.flips}f</span>`);
-
-                    if (srcParts.length > 0) hourTotalParts.push(srcLabel + srcParts.join(' '));
-                }
-                html += `<td class="heatmap-total-col" style="line-height:1.4">${hourTotalParts.join('<br>') || '-'}</td>`;
-                html += '</tr>';
-            }
-
-            // Day totals row
-            html += '<tr class="heatmap-total-row"><td class="heatmap-hour-col">Total</td>';
-            for (const d of days) {
-                let dayParts = [];
-                for (const src of sources) {
-                    const sd = heatmapSources[src];
-                    const pnlData = sd.pnl ? sd.pnl.data : {};
-                    const srcLabel = multiSource ? `<span style="color:${getSourceColor(src)};font-size:9px;font-weight:700;">${getSourceShort(src)}</span> ` : '';
-                    const srcParts = [];
-
-                    if (showPnl) {
-                        let dayPnl = 0;
-                        for (const h of hours) { const r = pnlData[String(h)]; if (r && r[String(d)]) dayPnl += r[String(d)].pnl; }
-                        srcParts.push(`<span class="${pnlCellClass(dayPnl)}">${dayPnl >= 0 ? '+' : ''}${dayPnl.toFixed(4)}</span>`);
-                    }
-                    const dft = sd.flips && sd.flips.totals.byDay ? sd.flips.totals.byDay[String(d)] : null;
-                    if (showFlips && dft) srcParts.push(`<span style="font-size:9px">${dft.flips}f</span>`);
-
-                    if (srcParts.length > 0) dayParts.push(srcLabel + srcParts.join(' '));
-                }
-                html += `<td style="line-height:1.4">${dayParts.join('<br>') || '-'}</td>`;
-            }
-            // Grand total
-            let grandParts = [];
-            for (const src of sources) {
-                const sd = heatmapSources[src];
-                const srcLabel = multiSource ? `<span style="color:${getSourceColor(src)};font-size:9px;font-weight:700;">${getSourceShort(src)}</span> ` : '';
-                const srcParts = [];
-
-                if (showPnl && sd.pnl) srcParts.push(`<span class="${pnlCellClass(sd.pnl.totals.total)}">${Number(sd.pnl.totals.total).toFixed(4)}</span>`);
-                if (showFlips && sd.flips) srcParts.push(`<span style="font-size:9px">${sd.flips.totals.maxFlips}f</span>`);
-
-                if (srcParts.length > 0) grandParts.push(srcLabel + srcParts.join(' '));
-            }
-            html += `<td class="heatmap-total-col" style="line-height:1.4">${grandParts.join('<br>')}</td>`;
-            html += '</tr></tbody></table>';
-
-            container.innerHTML = html;
-        }
 
         function pnlCellClass(v) {
             if (v > 0) return 'heatmap-cell-pos';
@@ -4149,6 +3855,264 @@
                 }
                 const prefix = multiSource ? `<span style="font-size:8px;color:var(--text-dim);">${getSourceShort(src)}</span> ` : '';
                 gParts.push(`${prefix}<span class="${pnlCellClass(gSum)}">${gSum >= 0 ? '+' : ''}${gSum.toFixed(4)}</span>`);
+            }
+            html += `<td class="heatmap-total-col">${gParts.join('<br>')}</td></tr>`;
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        /* ── Entry Price Heatmap (preco medio por share na entrada) ─ */
+        let ephmSources = {};
+        let ephmActiveSources = new Set(['ALPHA']);
+        let ephmFiltersInitialized = false;
+
+        function toggleEphmSource(source, btn) {
+            if (ephmActiveSources.has(source)) {
+                if (ephmActiveSources.size <= 1) return;
+                ephmActiveSources.delete(source);
+                btn.classList.remove('active');
+            } else {
+                ephmActiveSources.add(source);
+                btn.classList.add('active');
+            }
+            fetchEntryHeatmap();
+        }
+
+        function initEphmFilters() {
+            if (ephmFiltersInitialized) return;
+            ephmFiltersInitialized = true;
+
+            const monthSel = document.getElementById('ephm-month');
+            const yearSel = document.getElementById('ephm-year');
+            const hourFrom = document.getElementById('ephm-hour-from');
+            const hourTo = document.getElementById('ephm-hour-to');
+
+            const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+            meses.forEach((m, i) => {
+                const opt = document.createElement('option');
+                opt.value = i + 1; opt.textContent = m;
+                monthSel.appendChild(opt);
+            });
+
+            const now = new Date();
+            for (let y = now.getFullYear(); y >= now.getFullYear() - 2; y--) {
+                const opt = document.createElement('option');
+                opt.value = y; opt.textContent = y;
+                yearSel.appendChild(opt);
+            }
+
+            for (let h = 0; h < 24; h++) {
+                const label = String(h).padStart(2, '0') + ':00';
+                [hourFrom, hourTo].forEach(sel => {
+                    const opt = document.createElement('option');
+                    opt.value = h; opt.textContent = label;
+                    sel.appendChild(opt);
+                });
+            }
+
+            monthSel.value = now.getMonth() + 1;
+            yearSel.value = now.getFullYear();
+            hourFrom.value = 0;
+            hourTo.value = 23;
+        }
+
+        async function fetchEntryHeatmap() {
+            const year = document.getElementById('ephm-year').value;
+            const month = document.getElementById('ephm-month').value;
+            const container = document.getElementById('ephm-container');
+            container.innerHTML = '<div class="empty-state"><h2>Carregando...</h2></div>';
+
+            try {
+                const fetches = [];
+                const sourceKeys = [];
+                for (const src of ephmActiveSources) {
+                    const mode = src === 'REAL' ? 'real' : 'sim';
+                    const algoParam = src !== 'REAL' ? '&algorithm=' + src : '';
+                    fetches.push(fetch(`/api/dashboard/entry-price-heatmap?year=${year}&month=${month}&mode=${mode}${algoParam}${mgParam('mg-ephm')}`));
+                    sourceKeys.push(src);
+                }
+
+                const responses = await Promise.all(fetches);
+                ephmSources = {};
+                for (let i = 0; i < responses.length; i++) {
+                    if (responses[i].status === 401) { window.location.href = '/login'; return; }
+                    if (!responses[i].ok) throw new Error(responses[i].status);
+                    ephmSources[sourceKeys[i]] = await responses[i].json();
+                }
+
+                const firstData = ephmSources[sourceKeys[0]];
+                if (firstData) {
+                    document.getElementById('ephm-day-to').value = firstData.daysInMonth;
+                    document.getElementById('ephm-day-to').max = firstData.daysInMonth;
+                }
+
+                renderEntryHeatmap();
+            } catch (e) {
+                container.innerHTML = '<div class="empty-state"><h2>Erro</h2><p>' + e.message + '</p></div>';
+            }
+        }
+
+        function resetEphmFilters() {
+            const firstData = Object.values(ephmSources)[0];
+            if (!firstData) return;
+            document.getElementById('ephm-hour-from').value = 0;
+            document.getElementById('ephm-hour-to').value = 23;
+            document.getElementById('ephm-day-from').value = 1;
+            document.getElementById('ephm-day-to').value = firstData.daysInMonth;
+            renderEntryHeatmap();
+        }
+
+        // Classe de celula por faixa de preco de entrada: <=0.70 verde (lucrativo), 0.70-0.80 neutro, >0.80 vermelho
+        function entryPriceCellClass(avg) {
+            if (avg <= 0) return 'heatmap-cell-zero';
+            if (avg <= 0.70) return 'heatmap-cell-pos';
+            if (avg <= 0.80) return 'heatmap-cell-zero';
+            return 'heatmap-cell-neg';
+        }
+
+        function renderEntryHeatmap() {
+            const container = document.getElementById('ephm-container');
+            const sources = Object.keys(ephmSources);
+            if (sources.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h2>Sem dados</h2></div>';
+                return;
+            }
+
+            const firstData = ephmSources[sources[0]];
+            const hourFrom = parseInt(document.getElementById('ephm-hour-from').value);
+            const hourTo = parseInt(document.getElementById('ephm-hour-to').value);
+            const dayFrom = parseInt(document.getElementById('ephm-day-from').value);
+            const dayTo = Math.min(parseInt(document.getElementById('ephm-day-to').value), firstData.daysInMonth);
+
+            const hours = [];
+            for (let h = hourFrom; h <= hourTo; h++) hours.push(h);
+            const days = [];
+            for (let d = dayFrom; d <= dayTo; d++) days.push(d);
+
+            const meses = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+            const monthLabel = meses[firstData.month] + ' ' + firstData.year;
+
+            // Summary
+            let html = '<div class="heatmap-summary">';
+            for (const src of sources) {
+                const sd = ephmSources[src];
+                const color = getSourceColor(src) || 'var(--text)';
+                const t = sd.totals;
+                html += `<div class="heatmap-summary-card" style="border-top:3px solid ${color};">
+                    <div class="heatmap-summary-label">${src} Preco Medio (${monthLabel})</div>
+                    <div class="heatmap-summary-value ${entryPriceCellClass(t.avgPrice)}">${Number(t.avgPrice).toFixed(4)}</div>
+                </div>
+                <div class="heatmap-summary-card" style="border-top:3px solid ${color};">
+                    <div class="heatmap-summary-label">${src} BUYs</div>
+                    <div class="heatmap-summary-value">${t.trades}</div>
+                </div>
+                <div class="heatmap-summary-card" style="border-top:3px solid ${color};">
+                    <div class="heatmap-summary-label">${src} Size Total</div>
+                    <div class="heatmap-summary-value">${Number(t.size).toFixed(2)}</div>
+                </div>`;
+            }
+            html += '</div>';
+
+            // Helper: weighted avg over visible range for a hora total ou day total
+            function weightedAvg(priceSizeSum, sizeSum) {
+                return sizeSum > 0 ? priceSizeSum / sizeSum : 0;
+            }
+
+            const multiSource = sources.length > 1;
+            html += '<table class="heatmap-table"><thead><tr>';
+            html += '<th class="heatmap-hour-header">Hora</th>';
+            for (const d of days) html += `<th>D${d}</th>`;
+            html += '<th>Total</th></tr></thead><tbody>';
+
+            for (const h of hours) {
+                const hourLabel = String(h).padStart(2, '0') + ':00-' + String(h).padStart(2, '0') + ':59';
+                html += `<tr><td class="heatmap-hour-col">${hourLabel}</td>`;
+
+                // Celulas por dia
+                for (const d of days) {
+                    const srcParts = [];
+                    const tooltipParts = [];
+                    for (const src of sources) {
+                        const sd = ephmSources[src];
+                        const row = sd.grid[h];
+                        const cell = row.days[d - 1];
+                        if (cell && cell.trades > 0) {
+                            const prefix = multiSource ? `<span style="font-size:8px;color:var(--text-dim);">${getSourceShort(src)}</span> ` : '';
+                            srcParts.push(`${prefix}<span class="${entryPriceCellClass(cell.avgPrice)}">${cell.avgPrice.toFixed(4)}</span>`);
+                            tooltipParts.push(`${src}: ${cell.avgPrice.toFixed(4)} | BUYs: ${cell.trades} | size: ${cell.size.toFixed(2)}`);
+                        }
+                    }
+                    const content = srcParts.length > 0 ? srcParts.join('<br>') : '';
+                    html += `<td title="${tooltipParts.join(' | ')}" style="line-height:1.4">${content}</td>`;
+                }
+
+                // Hour total (weighted avg across visible days)
+                const hParts = [];
+                for (const src of sources) {
+                    const sd = ephmSources[src];
+                    let priceSizeSum = 0, sizeSum = 0, tradesSum = 0;
+                    for (const d of days) {
+                        const cell = sd.grid[h].days[d - 1];
+                        if (cell && cell.trades > 0) {
+                            priceSizeSum += cell.avgPrice * cell.size;
+                            sizeSum += cell.size;
+                            tradesSum += cell.trades;
+                        }
+                    }
+                    if (tradesSum > 0) {
+                        const avg = weightedAvg(priceSizeSum, sizeSum);
+                        const prefix = multiSource ? `<span style="font-size:8px;color:var(--text-dim);">${getSourceShort(src)}</span> ` : '';
+                        hParts.push(`${prefix}<span class="${entryPriceCellClass(avg)}">${avg.toFixed(4)}</span>`);
+                    }
+                }
+                html += `<td class="heatmap-total-col">${hParts.join('<br>')}</td></tr>`;
+            }
+
+            // Day totals row
+            html += '<tr class="heatmap-total-row"><td class="heatmap-hour-col">Total</td>';
+            for (const d of days) {
+                const dParts = [];
+                for (const src of sources) {
+                    const sd = ephmSources[src];
+                    let priceSizeSum = 0, sizeSum = 0, tradesSum = 0;
+                    for (const h of hours) {
+                        const cell = sd.grid[h].days[d - 1];
+                        if (cell && cell.trades > 0) {
+                            priceSizeSum += cell.avgPrice * cell.size;
+                            sizeSum += cell.size;
+                            tradesSum += cell.trades;
+                        }
+                    }
+                    if (tradesSum > 0) {
+                        const avg = weightedAvg(priceSizeSum, sizeSum);
+                        const prefix = multiSource ? `<span style="font-size:8px;color:var(--text-dim);">${getSourceShort(src)}</span> ` : '';
+                        dParts.push(`${prefix}<span class="${entryPriceCellClass(avg)}">${avg.toFixed(4)}</span>`);
+                    }
+                }
+                html += `<td class="heatmap-total-col">${dParts.join('<br>')}</td>`;
+            }
+
+            // Grand total (entire visible range)
+            const gParts = [];
+            for (const src of sources) {
+                const sd = ephmSources[src];
+                let priceSizeSum = 0, sizeSum = 0, tradesSum = 0;
+                for (const h of hours) {
+                    for (const d of days) {
+                        const cell = sd.grid[h].days[d - 1];
+                        if (cell && cell.trades > 0) {
+                            priceSizeSum += cell.avgPrice * cell.size;
+                            sizeSum += cell.size;
+                            tradesSum += cell.trades;
+                        }
+                    }
+                }
+                if (tradesSum > 0) {
+                    const avg = weightedAvg(priceSizeSum, sizeSum);
+                    const prefix = multiSource ? `<span style="font-size:8px;color:var(--text-dim);">${getSourceShort(src)}</span> ` : '';
+                    gParts.push(`${prefix}<span class="${entryPriceCellClass(avg)}">${avg.toFixed(4)}</span>`);
+                }
             }
             html += `<td class="heatmap-total-col">${gParts.join('<br>')}</td></tr>`;
 

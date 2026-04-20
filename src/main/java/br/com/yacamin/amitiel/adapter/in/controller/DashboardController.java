@@ -1,6 +1,7 @@
 package br.com.yacamin.amitiel.adapter.in.controller;
 
 import br.com.yacamin.amitiel.application.service.algoritms.simulation.SimPnlQueryService;
+import br.com.yacamin.amitiel.application.service.event.EntryPriceHeatmapService;
 import br.com.yacamin.amitiel.application.service.event.EventTimelineService;
 import br.com.yacamin.amitiel.application.service.event.EventHeatmapService;
 import br.com.yacamin.amitiel.application.service.event.SimEventTimelineService;
@@ -23,7 +24,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/dashboard")
@@ -37,6 +37,7 @@ public class DashboardController {
     private final EventTimelineService eventTimelineService;
     private final SimEventTimelineService simEventTimelineService;
     private final EventHeatmapService eventHeatmapService;
+    private final EntryPriceHeatmapService entryPriceHeatmapService;
     private final WalletBalanceService walletBalanceService;
     private final PolymarketRedeemService polymarketRedeemService;
     private final DustRedeemService dustRedeemService;
@@ -67,48 +68,10 @@ public class DashboardController {
         return simPnlQueryService.getPnlByPeriods(mode, algorithm, marketGroup);
     }
 
-    @GetMapping("/sim-pnl/heatmap")
-    public CompletableFuture<Map<String, Object>> getSimPnlHeatmap(
-            @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Integer month,
-            @RequestParam(defaultValue = "sim") String mode,
-            @RequestParam(required = false) String algorithm,
-            @RequestParam(required = false) String marketGroup) {
-        LocalDate now = LocalDate.now(SP_ZONE);
-        int y = year != null ? year : now.getYear();
-        int m = month != null ? month : now.getMonthValue();
-        return simPnlQueryService.getPnlHeatmap(y, m, mode, algorithm, marketGroup);
-    }
-
     @GetMapping("/sim-comparison")
     public Map<String, Object> getSimComparison(
             @RequestParam(required = false) String marketGroup) {
         return simPnlQueryService.getComparisonPnl(marketGroup);
-    }
-
-    @GetMapping("/heatmap")
-    public CompletableFuture<Map<String, Object>> getUnifiedHeatmap(
-            @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Integer month,
-            @RequestParam(defaultValue = "sim") String mode,
-            @RequestParam(required = false) String algorithm,
-            @RequestParam(required = false) String marketGroup) {
-        LocalDate now = LocalDate.now(SP_ZONE);
-        int y = year != null ? year : now.getYear();
-        int m = month != null ? month : now.getMonthValue();
-
-        CompletableFuture<Map<String, Object>> pnlFuture = simPnlQueryService.getPnlHeatmap(y, m, mode, algorithm, marketGroup);
-        CompletableFuture<Map<String, Object>> flipsFuture = simPnlQueryService.getFlipsHeatmap(y, m, mode, algorithm, marketGroup);
-
-        return CompletableFuture.allOf(pnlFuture, flipsFuture).thenApply(v -> {
-            Map<String, Object> result = new LinkedHashMap<>();
-            result.put("year", y);
-            result.put("month", m);
-            result.put("daysInMonth", LocalDate.of(y, m, 1).lengthOfMonth());
-            result.put("pnl", pnlFuture.join());
-            result.put("flips", flipsFuture.join());
-            return result;
-        });
     }
 
     @GetMapping("/verification/markets")
@@ -240,6 +203,19 @@ public class DashboardController {
         int y = year != null ? year : now.getYear();
         int m = month != null ? month : now.getMonthValue();
         return eventHeatmapService.getHeatmap(y, m, mode, algorithm, marketGroup);
+    }
+
+    @GetMapping("/entry-price-heatmap")
+    public Map<String, Object> getEntryPriceHeatmap(
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(defaultValue = "sim") String mode,
+            @RequestParam(required = false) String algorithm,
+            @RequestParam(required = false) String marketGroup) {
+        LocalDate now = LocalDate.now(SP_ZONE);
+        int y = year != null ? year : now.getYear();
+        int m = month != null ? month : now.getMonthValue();
+        return entryPriceHeatmapService.getHeatmap(y, m, mode, algorithm, marketGroup);
     }
 
     // ─── Wallet Balance ──────────────────────────────────────────
