@@ -161,6 +161,7 @@ public class PredictionHeatmapService {
     private String resolveEventType(String predictionType) {
         return switch (predictionType.toUpperCase()) {
             case "HORIZON" -> "PREDICTION_HORIZON_RESOLVED";
+            case "FASTHORIZON" -> "PREDICTION_FASTHORIZON_RESOLVED";
             case "BLOCK" -> "PREDICTION_BLOCK_RESOLVED";
             case "M2M" -> "PREDICTION_M2M_RESOLVED";
             default -> throw new IllegalArgumentException("Tipo invalido: " + predictionType);

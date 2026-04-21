@@ -1195,6 +1195,7 @@
                 <div id="pa-filters" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;">
                     <div class="mode-toggle" id="pa-type-selector">
                         <button class="mode-btn active" onclick="setPaType('HORIZON')">Horizon</button>
+                        <button class="mode-btn" onclick="setPaType('FASTHORIZON')">FastHorizon</button>
                         <button class="mode-btn" onclick="setPaType('BLOCK')">Block (5m)</button>
                         <button class="mode-btn" onclick="setPaType('M2M')">M2M (1m)</button>
                     </div>
@@ -1239,6 +1240,7 @@
                 <div class="heatmap-filters" style="margin-top:10px;">
                     <div class="mode-toggle" id="ph-type-selector">
                         <button class="mode-btn active" onclick="setPhType('HORIZON')">Horizon</button>
+                        <button class="mode-btn" onclick="setPhType('FASTHORIZON')">FastHorizon</button>
                         <button class="mode-btn" onclick="setPhType('BLOCK')">Block (5m)</button>
                         <button class="mode-btn" onclick="setPhType('M2M')">M2M (1m)</button>
                     </div>
@@ -5070,10 +5072,10 @@
 
         function setPaType(type) {
             paType = type;
-            const titles = { 'HORIZON': 'Acuracia - Horizon', 'BLOCK': 'Acuracia - Block (5m)', 'M2M': 'Acuracia - M2M (1m)' };
+            const titles = { 'HORIZON': 'Acuracia - Horizon', 'FASTHORIZON': 'Acuracia - FastHorizon', 'BLOCK': 'Acuracia - Block (5m)', 'M2M': 'Acuracia - M2M (1m)' };
             document.getElementById('pa-title').textContent = titles[type] || 'Acuracia';
             document.querySelectorAll('#pa-type-selector .mode-btn').forEach(btn => {
-                const labels = { 'HORIZON': 'Horizon', 'BLOCK': 'Block (5m)', 'M2M': 'M2M (1m)' };
+                const labels = { 'HORIZON': 'Horizon', 'FASTHORIZON': 'FastHorizon', 'BLOCK': 'Block (5m)', 'M2M': 'M2M (1m)' };
                 btn.classList.toggle('active', btn.textContent.trim() === labels[type]);
             });
             // Mostrar filtro valid apenas para BLOCK
@@ -5138,7 +5140,7 @@
 
         function renderPredictionAccuracy(data) {
             const container = document.getElementById('prediction-accuracy-container');
-            const typeLabels = { 'HORIZON': 'PREDICTION_HORIZON_RESOLVED', 'BLOCK': 'PREDICTION_BLOCK_RESOLVED', 'M2M': 'PREDICTION_M2M_RESOLVED' };
+            const typeLabels = { 'HORIZON': 'PREDICTION_HORIZON_RESOLVED', 'FASTHORIZON': 'PREDICTION_FASTHORIZON_RESOLVED', 'BLOCK': 'PREDICTION_BLOCK_RESOLVED', 'M2M': 'PREDICTION_M2M_RESOLVED' };
             const hitLabel = data.predictionType === 'M2M' ? 'Acertou' : 'Acertou Resolve';
             const missLabel = data.predictionType === 'M2M' ? 'Errou' : 'Errou Resolve';
 
@@ -5270,10 +5272,10 @@
 
         function setPhType(type) {
             phType = type;
-            const titles = { 'HORIZON': 'Heatmap Predicao - Horizon', 'BLOCK': 'Heatmap Predicao - Block (5m)', 'M2M': 'Heatmap Predicao - M2M (1m)' };
+            const titles = { 'HORIZON': 'Heatmap Predicao - Horizon', 'FASTHORIZON': 'Heatmap Predicao - FastHorizon', 'BLOCK': 'Heatmap Predicao - Block (5m)', 'M2M': 'Heatmap Predicao - M2M (1m)' };
             document.getElementById('ph-title').textContent = titles[type] || 'Heatmap Predicao';
             document.querySelectorAll('#ph-type-selector .mode-btn').forEach(btn => {
-                const labels = { 'HORIZON': 'Horizon', 'BLOCK': 'Block (5m)', 'M2M': 'M2M (1m)' };
+                const labels = { 'HORIZON': 'Horizon', 'FASTHORIZON': 'FastHorizon', 'BLOCK': 'Block (5m)', 'M2M': 'M2M (1m)' };
                 btn.classList.toggle('active', btn.textContent.trim() === labels[type]);
             });
             document.getElementById('ph-valid-selector').style.display = type === 'BLOCK' ? '' : 'none';

@@ -55,3 +55,6 @@ tdlib/td.binlog
 ### Secrets (local profile)
 application-local.yaml
 hft_result.csv
+
+# Config de JDK por maquina (JAVA_HOME ou gradle.properties local)
+gradle.properties
