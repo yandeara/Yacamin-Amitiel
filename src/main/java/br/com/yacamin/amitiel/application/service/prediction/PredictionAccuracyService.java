@@ -14,7 +14,10 @@ import java.util.*;
 public class PredictionAccuracyService {
 
     private static final int[][] CONFIDENCE_BANDS = {
-            {0, 40}, {50, 55}, {55, 60}, {60, 65}, {65, 70}, {70, 75}, {75, 80}, {80, 85}, {85, 90}, {90, 95}, {95, 100}
+            {0, 40}, {40, 50},
+            {50, 51}, {51, 52}, {52, 53}, {53, 54}, {54, 55},
+            {55, 56}, {56, 57}, {57, 58}, {58, 59}, {59, 60},
+            {60, 65}, {65, 70}, {70, 75}, {75, 80}, {80, 85}, {85, 90}, {90, 95}, {95, 100}
     };
 
     private final SimEventRepository simEventRepository;
@@ -104,9 +107,8 @@ public class PredictionAccuracyService {
     }
 
     private boolean inBand(double pct, int[] band) {
-        if (pct >= band[0] && pct < band[1]) return true;
-        // Banda 90-100 inclui exatamente 100
-        return band[0] == 90 && pct == 100.0;
+        if (pct == 100.0) return band[1] == 100;
+        return pct >= band[0] && pct < band[1];
     }
 
     @SuppressWarnings("unchecked")

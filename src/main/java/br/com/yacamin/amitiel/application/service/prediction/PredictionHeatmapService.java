@@ -17,8 +17,10 @@ public class PredictionHeatmapService {
     private static final ZoneId SP_ZONE = ZoneId.of("America/Sao_Paulo");
 
     private static final int[][] CONFIDENCE_BANDS = {
-            {0, 40}, {50, 55}, {55, 60}, {60, 65}, {65, 70},
-            {70, 75}, {75, 80}, {80, 85}, {85, 90}, {90, 95}, {95, 100}
+            {0, 40}, {40, 50},
+            {50, 51}, {51, 52}, {52, 53}, {53, 54}, {54, 55},
+            {55, 56}, {56, 57}, {57, 58}, {58, 59}, {59, 60},
+            {60, 65}, {65, 70}, {70, 75}, {75, 80}, {80, 85}, {85, 90}, {90, 95}, {95, 100}
     };
 
     private final SimEventRepository simEventRepository;
